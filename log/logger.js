@@ -30,6 +30,7 @@ const _LOG_MAX_MESSAGE = 2000;
 const _LOG_FLUSH_MS = 1000;
 const _LOG_RELAY_TYPE = 'CLAUDE_EXT_LOG';          // MAIN -> ISOLATED, via window.postMessage
 const _LOG_APPEND_TYPE = 'CLAUDE_EXT_LOG_APPEND';  // content -> background, via runtime.sendMessage
+const _LOG_CLEAR_TYPE = 'CLAUDE_EXT_LOG_CLEAR';    // viewer -> background, via runtime.sendMessage
 const _LOG_LEVELS = ['debug', 'warn', 'error'];
 
 const _logConfig = { app: 'ext', prefix: '[Ext]', role: 'content' };
@@ -37,6 +38,9 @@ let _logPending = [];
 let _logFlushTimer = null;
 let _logListenersInstalled = false;
 let _logWriteChain = Promise.resolve();
+// Set while the page is hidden or being unloaded: entries are sent at once instead of batched, since a
+// timer may never fire again (covers entries logged by other pagehide/visibilitychange handlers).
+let _logPageHidden = false;
 
 function _logExtApi() {
 	return globalThis.browser ?? globalThis.chrome;
@@ -103,7 +107,14 @@ function _logFlush() {
 function _logQueue(entries) {
 	_logPending.push(...entries);
 	if (_logPending.length > _LOG_MAX_ENTRIES) _logPending = _logPending.slice(-_LOG_MAX_ENTRIES);
-	_logFlushTimer ??= setTimeout(_logFlush, _LOG_FLUSH_MS);
+	if (_logPageHidden) _logFlush();
+	else _logFlushTimer ??= setTimeout(_logFlush, _LOG_FLUSH_MS);
+}
+
+// Empty debug_logs, queued behind any append already in progress so it can't bring old entries back.
+function _logClear() {
+	_logWriteChain = _logWriteChain.then(() => _logStorage().set({ debug_logs: [] }).catch(() => { }));
+	return _logWriteChain;
 }
 
 function _logInstallListeners() {
@@ -113,9 +124,16 @@ function _logInstallListeners() {
 
 	if (_logConfig.role === 'background') {
 		// Batches from this extension's content scripts. No reply: other listeners may answer.
-		ext.runtime.onMessage.addListener((message, sender) => {
-			if (message?.type !== _LOG_APPEND_TYPE || sender?.id !== ext.runtime.id || !Array.isArray(message.entries)) return;
-			_logAppend(message.entries);
+		// Batches from this extension's content scripts, and Clear from the viewer. No reply for
+		// batches (other listeners may answer); Clear replies once it's done.
+		ext.runtime.onMessage.addListener((message, sender, sendResponse) => {
+			if (sender?.id !== ext.runtime.id) return;
+			if (message?.type === _LOG_APPEND_TYPE && Array.isArray(message.entries)) {
+				_logAppend(message.entries);
+			} else if (message?.type === _LOG_CLEAR_TYPE) {
+				_logClear().then(() => sendResponse(true));
+				return true;
+			}
 		});
 		return;
 	}
@@ -128,9 +146,11 @@ function _logInstallListeners() {
 		_logQueue(event.data.entries);
 	});
 	// Don't lose the last second of entries to a navigation, reload or close.
-	window.addEventListener('pagehide', _logFlush);
+	window.addEventListener('pagehide', () => { _logPageHidden = true; _logFlush(); });
+	window.addEventListener('pageshow', () => { _logPageHidden = false; }); // back from the bfcache
 	document.addEventListener('visibilitychange', () => {
-		if (document.visibilityState === 'hidden') _logFlush();
+		_logPageHidden = document.visibilityState === 'hidden';
+		if (_logPageHidden) _logFlush();
 	});
 }
 

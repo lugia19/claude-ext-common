@@ -97,8 +97,14 @@ els.copy.addEventListener('click', async () => {
 	setTimeout(() => { els.copy.textContent = localize('shared.logs.copy'); }, 1500);
 });
 
+// Through the background, which owns debug_logs (common/log/logger.js): a direct write could race an
+// append in progress and bring the old entries back. Direct only if no background answers.
 els.clear.addEventListener('click', async () => {
-	await storage.set({ debug_logs: [] });
+	try {
+		await (globalThis.browser ?? globalThis.chrome).runtime.sendMessage({ type: 'CLAUDE_EXT_LOG_CLEAR' });
+	} catch (e) {
+		await storage.set({ debug_logs: [] });
+	}
 	entries = [];
 	updateSenders();
 	render();
