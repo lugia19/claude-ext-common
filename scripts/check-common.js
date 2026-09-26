@@ -44,8 +44,10 @@ if (checkedOut !== pinned) {
 		+ '  Commit the bump, or run `git submodule update common` to go back to the pinned commit.');
 }
 
+// A shallow submodule (--depth) lacks the history the ancestry check below walks.
+const shallow = git(['-C', 'common', 'rev-parse', '--is-shallow-repository']) === 'true';
 try {
-	git(['-C', 'common', 'fetch', '--quiet', 'origin']);
+	git(['-C', 'common', 'fetch', '--quiet', ...(shallow ? ['--unshallow'] : []), 'origin']);
 } catch (e) {
 	fail(`Couldn't fetch common from origin, so couldn't check it's up to date:\n  ${(e.stderr || e.message).trim()}`);
 }
