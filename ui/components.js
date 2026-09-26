@@ -26,8 +26,8 @@ const CLAUDE_CLASSES = {
 	TEXT_MUTED: 'text-sm text-text-400',
 
 	// Tooltip
-	TOOLTIP_WRAPPER: 'fixed left-0 top-0 min-w-max z-tooltip pointer-events-none',
-	TOOLTIP_CONTENT: 'px-2 rounded-[6px] bg-[var(--cds-tooltip-bg)] text-[var(--cds-tooltip-fg)] text-[13px]/[18px] shadow-sm dark:shadow-panel-sm inline-flex items-center whitespace-nowrap gap-2 h-6',
+	TOOLTIP_WRAPPER: 'fixed left-0 top-0 z-tooltip pointer-events-none',
+	TOOLTIP_CONTENT: 'px-2 rounded-[6px] bg-[var(--cds-tooltip-bg)] text-[var(--cds-tooltip-fg)] text-[13px]/[18px] shadow-sm dark:shadow-panel-sm inline-flex items-center gap-2',
 
 	// Layout helpers
 	FLEX_CENTER: 'flex items-center justify-center',
@@ -1101,6 +1101,12 @@ function createClaudeTooltip(element, tooltipText, deleteOnClick) {
 	tooltipContent.setAttribute('data-open', '');
 	tooltipContent.setAttribute('data-side', 'top');
 	tooltipContent.setAttribute('data-align', 'center');
+	// A newline in the text starts a new line, and long text wraps at 400px. A single line stays
+	// exactly claude.ai's 24px pill.
+	Object.assign(tooltipContent.style, {
+		whiteSpace: 'pre-line', maxWidth: '400px', minHeight: '24px', paddingTop: '3px', paddingBottom: '3px',
+		fontSize: '13px', lineHeight: '18px',
+	});
 	tooltipContent.innerHTML = `<span>${tooltipText}</span>`;
 	tooltipWrapper.appendChild(tooltipContent);
 
@@ -1115,21 +1121,51 @@ function createClaudeTooltip(element, tooltipText, deleteOnClick) {
 		}
 	}
 
-	element.addEventListener('mouseenter', () => {
+	let pressTimer = null;
+	let autoHideTimer = null;
+
+	// Centered above the element and kept inside the viewport; below it if there's no room above.
+	function showTooltip() {
 		tooltipWrapper.style.display = 'block';
 		const rect = element.getBoundingClientRect();
 		const tooltipRect = tooltipWrapper.getBoundingClientRect();
 		const centerX = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+		const x = Math.min(Math.max(8, centerX), window.innerWidth - tooltipRect.width - 8);
 		const topY = rect.top - tooltipRect.height - 5;
-		const bottomY = rect.bottom + 5;
-		const y = topY < 0 ? bottomY : topY;
-		tooltipWrapper.style.transform = `translate(${centerX}px, ${y}px)`;
+		const y = topY < 0 ? rect.bottom + 5 : topY;
+		tooltipWrapper.style.transform = `translate(${x}px, ${y}px)`;
 		setTimeout(checkTooltipParent, 500);
-	});
+	}
 
-	element.addEventListener('mouseleave', () => {
+	function hideTooltip() {
 		tooltipWrapper.style.display = 'none';
+		clearTimeout(pressTimer);
+		clearTimeout(autoHideTimer);
+	}
+
+	// Mouse and pen: hover. Touch has no hover, so a long press shows it for a few seconds instead.
+	element.addEventListener('pointerenter', (e) => {
+		if (e.pointerType !== 'touch') showTooltip();
 	});
+	element.addEventListener('pointerleave', (e) => {
+		if (e.pointerType !== 'touch') hideTooltip();
+	});
+	element.addEventListener('pointerdown', (e) => {
+		if (e.pointerType !== 'touch') return;
+		clearTimeout(pressTimer);
+		pressTimer = setTimeout(() => {
+			showTooltip();
+			clearTimeout(autoHideTimer);
+			autoHideTimer = setTimeout(hideTooltip, 3000);
+		}, 500);
+	});
+	element.addEventListener('pointerup', (e) => {
+		if (e.pointerType === 'touch') clearTimeout(pressTimer);
+	});
+	element.addEventListener('pointercancel', hideTooltip);
+	// No text selection or callout menu on a long press.
+	element.style.webkitTouchCallout = 'none';
+	element.style.userSelect = 'none';
 
 	tooltipWrapper.addEventListener('mouseenter', () => {
 		tooltipWrapper.style.display = 'none';
