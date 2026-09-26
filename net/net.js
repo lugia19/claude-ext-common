@@ -13,8 +13,9 @@
 
 	// ======== fetch arguments ========
 
-	// The absolute URL of a fetch() input (string, URL or Request); relative URLs resolve against the
-	// page. '' for anything else.
+	// The absolute URL of a fetch() input (string, URL or Request). Relative URLs resolve the way
+	// fetch() resolves them: against the document's base URL, so 'api/x' on /chat/123 is
+	// /chat/api/x. '' for anything else.
 	net.getFetchUrl ??= function (input) {
 		let url;
 		if (typeof input === 'string') url = input;
@@ -22,7 +23,7 @@
 		else if (typeof Request !== 'undefined' && input instanceof Request) url = input.url;
 		else return '';
 		try {
-			return new URL(url, globalThis.location?.origin).href;
+			return new URL(url, globalThis.document?.baseURI ?? globalThis.location?.href).href;
 		} catch (e) {
 			return url;
 		}
