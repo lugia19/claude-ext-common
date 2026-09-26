@@ -225,7 +225,7 @@ async function readPatchNotes() {
 		if (!response.ok) return [];
 		return (await response.text()).split('\n').map(line => line.trim()).filter(Boolean);
 	} catch (error) {
-		console.error('Failed to load patch notes:', error);
+		(globalThis.createLogger?.('Cards') ?? console).error('Failed to load patch notes:', error);
 		return [];
 	}
 }

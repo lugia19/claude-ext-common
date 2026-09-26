@@ -187,7 +187,7 @@ class ClaudeModal {
 					this.destroy();
 				}
 			} catch (error) {
-				console.error('Modal button handler error:', error);
+				(globalThis.createLogger?.('UI') ?? console).error('Modal button handler error:', error);
 			}
 		};
 
@@ -516,6 +516,63 @@ function createClaudeSelect(options, selectedValue = '', onChange = null) {
 
 // Language picker select: Auto plus every UI language in its own script, preset to the current
 // override. Save its value with setLanguageOverride() and reload the page.
+// Show the extension's debug logs (common/log/viewer.html) in an overlay on the page. An overlay
+// rather than a tab, because the desktop app can't open extension tabs. ISOLATED world only.
+let _dismissDebugLogs = null;
+
+function openDebugLogs() {
+	_dismissDebugLogs?.();
+
+	const overlay = document.createElement('div');
+	// Per extension: the page DOM is shared, and each extension's viewer shows its own logs.
+	overlay.id = `claude-ext-debug-logs-${chrome.runtime.id}`;
+	Object.assign(overlay.style, {
+		position: 'fixed', inset: '0', zIndex: '99999', background: 'rgba(0, 0, 0, 0.5)',
+		display: 'flex', alignItems: 'center', justifyContent: 'center',
+	});
+
+	const frame = document.createElement('div');
+	Object.assign(frame.style, { position: 'relative', width: '92vw', height: '90vh' });
+
+	const iframe = document.createElement('iframe');
+	iframe.src = chrome.runtime.getURL(`common/log/viewer.html?lang=${encodeURIComponent(currentLocale())}`);
+	iframe.allow = 'clipboard-write';
+	Object.assign(iframe.style, { width: '100%', height: '100%', border: 'none', borderRadius: '8px' });
+
+	const close = document.createElement('button');
+	close.textContent = '×';
+	close.setAttribute('aria-label', localize('shared.close'));
+	Object.assign(close.style, {
+		position: 'absolute', top: '-14px', right: '-14px', width: '28px', height: '28px', borderRadius: '50%',
+		border: 'none', background: '#2c84db', color: 'white', fontSize: '18px', lineHeight: '1', cursor: 'pointer',
+	});
+
+	const dismiss = () => {
+		overlay.remove();
+		document.removeEventListener('keydown', onKey, true);
+		if (_dismissDebugLogs === dismiss) _dismissDebugLogs = null;
+	};
+	// Escape closes only the viewer, not a modal it was opened over (ClaudeModal listens for Escape too).
+	// If something else already removed the overlay, just unhook and let the key through.
+	const onKey = (e) => {
+		if (e.key !== 'Escape') return;
+		if (!overlay.isConnected) {
+			dismiss();
+			return;
+		}
+		e.stopImmediatePropagation();
+		dismiss();
+	};
+	_dismissDebugLogs = dismiss;
+	close.addEventListener('click', dismiss);
+	overlay.addEventListener('click', (e) => { if (e.target === overlay) dismiss(); });
+	document.addEventListener('keydown', onKey, true);
+
+	frame.append(iframe, close);
+	overlay.appendChild(frame);
+	document.body.appendChild(overlay);
+}
+
 function createLanguageSelect() {
 	const options = [
 		{ value: '', label: localize('shared.lang_auto') },
