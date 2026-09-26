@@ -160,7 +160,10 @@ class FloatingCard {
 
 		const img = document.createElement('img');
 		img.src = chrome.runtime.getURL(imagePath);
-		img.height = 36;
+		// The real size of every card image, so the space is reserved before it loads (claude.ai's
+		// CSS scales it down to the card width): show() measures the card to stack and clamp it.
+		img.width = 580;
+		img.height = 146;
 		img.style.border = '0';
 		img.style.display = 'inline-block';
 		img.alt = alt;
@@ -197,23 +200,40 @@ class FloatingCard {
 
 	// Top-right. In the desktop app, mount in the content pane (below its toolbar) so cards don't
 	// cover the window controls; the mount must be a positioning context for top/right to apply.
+	// Both extensions show cards (often together, right after an update) and share the DOM, so a
+	// card goes below any already mounted instead of covering it - but never past the bottom, where
+	// it couldn't be reached or closed; out of room, it overlaps the lower end of the stack. The
+	// same holds when the viewport later shrinks (window resize, phone rotation, on-screen keyboard).
 	show() {
 		const desktopMount = document.querySelector('.dframe-content-inner');
-		this.element.style.top = desktopMount ? '40px' : '20px';
+		const mount = desktopMount || document.body;
+		const minTop = desktopMount ? 40 : 20;
+		const below = [...mount.querySelectorAll(':scope > [data-claude-ext-card]')]
+			.reduce((top, card) => Math.max(top, card.offsetTop + card.offsetHeight + 10), 0);
+		this.element.setAttribute('data-claude-ext-card', '');
+		this.element.style.top = `${minTop}px`;
 		this.element.style.right = '20px';
 		if (desktopMount) {
 			if (getComputedStyle(desktopMount).position === 'static') {
 				desktopMount.style.position = 'relative';
 			}
 			this.element.style.position = 'absolute';
-			desktopMount.appendChild(this.element);
-		} else {
-			document.body.appendChild(this.element);
 		}
+		mount.appendChild(this.element);
+		// The visible part: the mount can be taller than the viewport.
+		const maxTop = () => window.innerHeight - (desktopMount ? desktopMount.getBoundingClientRect().top : 0)
+			- this.element.offsetHeight - 10;
+		this.element.style.top = `${Math.max(minTop, Math.min(below, maxTop()))}px`;
+		// Only ever pulls the card up, so a dragged card otherwise stays where it was put.
+		this.keepInView = () => {
+			this.element.style.top = `${Math.max(0, Math.min(this.element.offsetTop, maxTop()))}px`;
+		};
+		window.addEventListener('resize', this.keepInView);
 	}
 
 	remove() {
 		if (this.cleanup) this.cleanup();
+		if (this.keepInView) window.removeEventListener('resize', this.keepInView);
 		this.element.remove();
 	}
 }
