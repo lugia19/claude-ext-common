@@ -549,7 +549,12 @@ function openDebugLogs() {
 		overlay.remove();
 		document.removeEventListener('keydown', onKey, true);
 	};
-	const onKey = (e) => { if (e.key === 'Escape') dismiss(); };
+	// Escape closes only the viewer, not a modal it was opened over (ClaudeModal listens for Escape too).
+	const onKey = (e) => {
+		if (e.key !== 'Escape') return;
+		e.stopImmediatePropagation();
+		dismiss();
+	};
 	close.addEventListener('click', dismiss);
 	overlay.addEventListener('click', (e) => { if (e.target === overlay) dismiss(); });
 	document.addEventListener('keydown', onKey, true);
