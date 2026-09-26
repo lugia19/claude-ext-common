@@ -1,7 +1,9 @@
 // check-common.js (claude-ext-common)
 // Run by each extension's build.bat before packaging, from the extension root. Stops the build
 // unless common/ is exactly the commit the extension pins, and that commit matches common's main.
+// This file lives in the submodule, so build.bat checks the submodule out first when it never was:
 //
+//   if not exist common\.git git submodule update --init common
 //   node common/scripts/check-common.js || exit /b 1
 'use strict';
 
@@ -25,18 +27,13 @@ function fail(message) {
 	process.exit(1);
 }
 
-// An uninitialized submodule has nothing to lose: check out the pinned commit. (Also, until then
-// `git -C common` would run against the extension repo itself.)
-if (git(['submodule', 'status', 'common']).startsWith('-')) {
-	console.log('[check-common] Initializing common/...');
-	git(['submodule', 'update', '--init', 'common']);
-}
-
 const pinned = git(['ls-tree', 'HEAD', 'common']).split(/\s+/)[2];
 if (!pinned) fail('This repo has no common/ submodule in HEAD.');
 
-if (git(['-C', 'common', 'status', '--porcelain'])) {
-	fail('common/ has uncommitted changes. Commit them in common (and bump the pointer), or discard them.');
+// web-ext packs every file, so anything not in the commit counts, whatever the user's git config
+// hides: untracked files, and ignored ones.
+if (git(['-C', 'common', 'status', '--porcelain', '--untracked-files=all', '--ignored'])) {
+	fail('common/ has uncommitted changes or extra files. Commit them in common (and bump the pointer), or remove them.');
 }
 
 // Not fixed up automatically: this is also what an uncommitted bump looks like, which
