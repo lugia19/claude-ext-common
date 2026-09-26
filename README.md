@@ -21,13 +21,14 @@ There is no bundler. Every file is a plain script listed directly in the extensi
 | `i18n/i18n-core.js` | any | `localize`, `translate`, `currentLocale`, `normalizeLocale`, `fmtNum`, the shared language override and account locale cache |
 | `i18n/account-locale-watcher.js` | MAIN | Records the account language from `PUT /api/account_profile`. IIFE, safe for every extension to load |
 | `i18n/<lang>.js` | any | Tables for the `shared.*` keys used by the files here |
+| `claude/page.js` | ISOLATED (+ MAIN, one extension) | `getActiveOrgId`, `getConversationId`, `getIncognitoConversationId`, `isIncognito`, `getProjectId`, and page predicates (`isHomePage`, `isChatPage`, `isProjectPage`, `isCodePage`, `isCoworkPage`). URL, cookie and sessionStorage only, never the DOM |
 | `ui/components.js` | ISOLATED | claude.ai-styled UI kit: `CLAUDE_CLASSES`, `ClaudeModal`, alert/confirm/prompt helpers, `createClaude*` controls, `createLanguageSelect`, tooltips, `isMobileLayout` |
 | `ui/cards.js` | ISOLATED | `FloatingCard`, `makeDraggable`, `initNotificationCards` (version-update and rate-reminder cards) |
 | `assets/` | - | Images used by the cards. List them in `web_accessible_resources`. |
 | `scripts/` | - | Dev tooling, see below. Exclude it from builds (`--ignore-files "common/scripts/**"`). |
 
 Load order: the `i18n/<lang>.js` tables, then the extension's own tables, then `i18n/i18n-core.js`,
-then `ui/components.js`, then `ui/cards.js`.
+then `claude/page.js`, then `ui/components.js`, then `ui/cards.js`.
 
 ## Rules
 
@@ -45,6 +46,18 @@ These exist because two extensions load this code into the same page.
   inline styles.
 - **Never locate claude.ai elements by visible text, `aria-label`, `alt` or `title`**: claude.ai
   localizes its UI. Use `data-testid`, `data-cds`, or structure.
+
+## How the two extensions coordinate
+
+Beyond sharing this code, the extensions rely on each other's behaviour in two places. Keep both
+sides in sync when changing either:
+
+- **Claude QoL marks `<html>` with `data-claude-qol-installed`.** The tracker reads it to hide its
+  "get Claude QoL" links, promo badges and the matching settings toggle.
+- **The title-area claim.** The tracker keeps its stats line's full width claimed in the chat title
+  group and lets it overflow; QoL's header button bar watches for header overflow and collapses its
+  buttons into a menu to make room. The tracker never reads QoL's classes: it measures what is in
+  the header band and only falls back to a strip below the header after a grace period.
 
 ## Localization
 
