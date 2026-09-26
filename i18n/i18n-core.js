@@ -85,7 +85,7 @@ async function refreshAccountLocale() {
 		const response = await fetch('/api/account_profile');
 		if (response.ok) writeAccountLocale((await response.json()).locale);
 	} catch (e) {
-		console.error('Failed to fetch account locale:', e);
+		(globalThis.createLogger?.('i18n') ?? console).error('Failed to fetch account locale:', e);
 	}
 }
 
