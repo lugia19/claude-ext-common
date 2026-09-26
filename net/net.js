@@ -172,7 +172,7 @@
 	};
 
 	// Read an SSE body (a Response or a ReadableStream) to the end, calling onEvent for every event.
-	// Return false from onEvent to stop early: the stream is cancelled, so a clone or tee branch stops
+	// Return false from onEvent to stop early: the stream is cancelled (not awaited), so a clone or tee branch stops
 	// buffering the rest of the body. Also stops (and cancels) if a single unfinished event grows past
 	// maxBufferedChars. Resolves true if the stream was read to the end, false if it stopped early.
 	// Stream errors (an aborted request) reject, after the events that did arrive were delivered.
@@ -180,6 +180,9 @@
 		const reader = (typeof Response !== 'undefined' && source instanceof Response ? source.body : source).getReader();
 		const decoder = new TextDecoder();
 		const splitter = net.createSseSplitter();
+		// Cancel without waiting: on a clone() or tee branch the cancel only settles once the other
+		// branch finishes too, which for a live completion is the end of the whole reply.
+		const stop = () => { reader.cancel().catch(() => { }); };
 		try {
 			for (;;) {
 				const { done, value } = await reader.read();
@@ -188,13 +191,13 @@
 					: splitter.push(decoder.decode(value, { stream: true }));
 				for (const event of events) {
 					if (onEvent(event) === false) {
-						await reader.cancel().catch(() => { });
+						stop();
 						return false;
 					}
 				}
 				if (done) return true;
 				if (splitter.bufferedChars > maxBufferedChars) {
-					await reader.cancel().catch(() => { });
+					stop();
 					return false;
 				}
 			}
