@@ -202,7 +202,8 @@ class FloatingCard {
 	// cover the window controls; the mount must be a positioning context for top/right to apply.
 	// Both extensions show cards (often together, right after an update) and share the DOM, so a
 	// card goes below any already mounted instead of covering it - but never past the bottom, where
-	// it couldn't be reached or closed; out of room, it overlaps the lower end of the stack.
+	// it couldn't be reached or closed; out of room, it overlaps the lower end of the stack. The
+	// same holds when the viewport later shrinks (window resize, phone rotation, on-screen keyboard).
 	show() {
 		const desktopMount = document.querySelector('.dframe-content-inner');
 		const mount = desktopMount || document.body;
@@ -220,13 +221,19 @@ class FloatingCard {
 		}
 		mount.appendChild(this.element);
 		// The visible part: the mount can be taller than the viewport.
-		const mountTop = desktopMount ? desktopMount.getBoundingClientRect().top : 0;
-		const maxTop = window.innerHeight - mountTop - this.element.offsetHeight - 10;
-		this.element.style.top = `${Math.max(minTop, Math.min(below, maxTop))}px`;
+		const maxTop = () => window.innerHeight - (desktopMount ? desktopMount.getBoundingClientRect().top : 0)
+			- this.element.offsetHeight - 10;
+		this.element.style.top = `${Math.max(minTop, Math.min(below, maxTop()))}px`;
+		// Only ever pulls the card up, so a dragged card otherwise stays where it was put.
+		this.keepInView = () => {
+			this.element.style.top = `${Math.max(0, Math.min(this.element.offsetTop, maxTop()))}px`;
+		};
+		window.addEventListener('resize', this.keepInView);
 	}
 
 	remove() {
 		if (this.cleanup) this.cleanup();
+		if (this.keepInView) window.removeEventListener('resize', this.keepInView);
 		this.element.remove();
 	}
 }
