@@ -518,12 +518,14 @@ function createClaudeSelect(options, selectedValue = '', onChange = null) {
 // override. Save its value with setLanguageOverride() and reload the page.
 // Show the extension's debug logs (common/log/viewer.html) in an overlay on the page. An overlay
 // rather than a tab, because the desktop app can't open extension tabs. ISOLATED world only.
+let _dismissDebugLogs = null;
+
 function openDebugLogs() {
-	const OVERLAY_ID = 'claude-ext-debug-logs';
-	document.getElementById(OVERLAY_ID)?.remove();
+	_dismissDebugLogs?.();
 
 	const overlay = document.createElement('div');
-	overlay.id = OVERLAY_ID;
+	// Per extension: the page DOM is shared, and each extension's viewer shows its own logs.
+	overlay.id = `claude-ext-debug-logs-${chrome.runtime.id}`;
 	Object.assign(overlay.style, {
 		position: 'fixed', inset: '0', zIndex: '99999', background: 'rgba(0, 0, 0, 0.5)',
 		display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -548,13 +550,20 @@ function openDebugLogs() {
 	const dismiss = () => {
 		overlay.remove();
 		document.removeEventListener('keydown', onKey, true);
+		if (_dismissDebugLogs === dismiss) _dismissDebugLogs = null;
 	};
 	// Escape closes only the viewer, not a modal it was opened over (ClaudeModal listens for Escape too).
+	// If something else already removed the overlay, just unhook and let the key through.
 	const onKey = (e) => {
 		if (e.key !== 'Escape') return;
+		if (!overlay.isConnected) {
+			dismiss();
+			return;
+		}
 		e.stopImmediatePropagation();
 		dismiss();
 	};
+	_dismissDebugLogs = dismiss;
 	close.addEventListener('click', dismiss);
 	overlay.addEventListener('click', (e) => { if (e.target === overlay) dismiss(); });
 	document.addEventListener('keydown', onKey, true);
