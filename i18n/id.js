@@ -1,0 +1,17 @@
+// Indonesian - keys mirror en.js.
+Object.assign((globalThis.CLAUDE_EXT_I18N ??= {})['id'] ??= {}, {
+	"shared.cancel": "Batal",
+	"shared.confirm": "Konfirmasi",
+	"shared.ok": "OK",
+	"shared.loading": "Memuat...",
+	"shared.validation_error": "Kesalahan Validasi",
+	"shared.none_available": "Tidak ada yang tersedia",
+	"shared.search_placeholder": "Cari...",
+	"shared.notif.kofi_alt": "Traktir saya kopi di ko-fi.com",
+	"shared.notif.updated_to": "Diperbarui ke v{version}!",
+	"shared.notif.whats_new": "Yang Baru:",
+	"shared.notif.view_release_notes": "Lihat catatan rilis lengkap",
+	"shared.notif.enjoying": "Suka dengan {name}?",
+	"shared.notif.consider_rating": "Pertimbangkan untuk memberi rating!",
+	"shared.notif.rate_alt": "Beri rating ekstensi ini",
+});
