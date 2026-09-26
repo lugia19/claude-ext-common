@@ -109,6 +109,11 @@ All run from the extension repo's root:
 - `node common/scripts/check-i18n.js [--tables <dir>]... [--src <dir>]...`: missing, extra and
   undefined keys, placeholder mismatches, and extension tables defining `shared.*` keys. `--src`
   takes directories or files. Defaults to `--tables content/i18n --src content`.
+- `node common/scripts/check-common.js`: run first by each extension's `build.bat`, from the extension
+  root, after checking the submodule out if it never was (the script lives in it). Stops the build
+  unless `common/` is clean (untracked and ignored files count), checked out at the commit the
+  extension pins, and that commit matches common's `main` (by content: a merge commit past the pin
+  is fine). A failed fetch stops it too.
 - `bash common/scripts/poll-codex.sh <pr> [--trigger|--read] [--message=...]` and
   `bash common/scripts/codex-react.sh <pr> <PRRC_id> <up|down|none>`: the Codex PR review loop.
 
