@@ -197,9 +197,15 @@ class FloatingCard {
 
 	// Top-right. In the desktop app, mount in the content pane (below its toolbar) so cards don't
 	// cover the window controls; the mount must be a positioning context for top/right to apply.
+	// Both extensions show cards (often together, right after an update) and share the DOM, so a
+	// card goes below any already mounted instead of covering it.
 	show() {
 		const desktopMount = document.querySelector('.dframe-content-inner');
-		this.element.style.top = desktopMount ? '40px' : '20px';
+		const mount = desktopMount || document.body;
+		const below = [...mount.querySelectorAll(':scope > [data-claude-ext-card]')]
+			.reduce((top, card) => Math.max(top, card.offsetTop + card.offsetHeight + 10), 0);
+		this.element.setAttribute('data-claude-ext-card', '');
+		this.element.style.top = `${Math.max(desktopMount ? 40 : 20, below)}px`;
 		this.element.style.right = '20px';
 		if (desktopMount) {
 			if (getComputedStyle(desktopMount).position === 'static') {
