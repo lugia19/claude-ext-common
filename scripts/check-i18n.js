@@ -3,7 +3,8 @@
 //
 //   node common/scripts/check-i18n.js [--tables <dir>]... [--src <dir>]...
 //
-// Paths are relative to the repo containing the submodule. Defaults: --tables content/i18n,
+// Paths are relative to the repo containing the submodule. --src takes directories or single files
+// (node_modules, debug and common are skipped inside directories). Defaults: --tables content/i18n,
 // --src content. The common tables (common/i18n) are always checked as well.
 // - keys missing from / extra in each language vs en, for common and for the extension separately
 // - extension tables defining shared.* keys, which belong to common
@@ -25,13 +26,13 @@ for (let i = 2; i < process.argv.length; i++) {
 if (!args.tables.length) args.tables.push(path.join(root, 'content', 'i18n'));
 if (!args.src.length) args.src.push(path.join(root, 'content'));
 
-// Run the table files of the given dirs in a fresh sandbox and return the merged tables.
+// Run the table files (<lang>.js) of the given dirs in a fresh sandbox and return the merged tables.
 function loadTables(dirs) {
 	const sandbox = {};
 	sandbox.globalThis = sandbox;
 	vm.createContext(sandbox);
 	for (const dir of dirs) {
-		for (const file of fs.readdirSync(dir).filter(f => f.endsWith('.js'))) {
+		for (const file of fs.readdirSync(dir).filter(f => /^[a-z]{2}(-[A-Z]{2})?\.js$/.test(f))) {
 			vm.runInContext(fs.readFileSync(path.join(dir, file), 'utf8'), sandbox, { filename: file });
 		}
 	}
@@ -68,11 +69,15 @@ for (const [lang, table] of Object.entries(extTables)) {
 	if (shared.length) warn(`[ext/${lang}] defines common keys: ${shared.join(', ')}`);
 }
 
-function walk(dir, out = []) {
-	for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-		const full = path.join(dir, entry.name);
-		if (entry.isDirectory()) walk(full, out);
-		else if (entry.name.endsWith('.js')) out.push(full);
+const SKIP_DIRS = new Set(['node_modules', 'debug', 'common', '.git']);
+function walk(target, out = []) {
+	if (!fs.statSync(target).isDirectory()) {
+		if (target.endsWith('.js')) out.push(target);
+		return out;
+	}
+	for (const entry of fs.readdirSync(target, { withFileTypes: true })) {
+		if (entry.isDirectory() && SKIP_DIRS.has(entry.name)) continue;
+		walk(path.join(target, entry.name), out);
 	}
 	return out;
 }

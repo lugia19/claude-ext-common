@@ -19,8 +19,9 @@ There is no bundler. Every file is a plain script listed directly in the extensi
 | Path | World | What |
 | --- | --- | --- |
 | `i18n/i18n-core.js` | any | `localize`, `translate`, `currentLocale`, `normalizeLocale`, `fmtNum`, the shared language override and account locale cache |
+| `i18n/account-locale-watcher.js` | MAIN | Records the account language from `PUT /api/account_profile`. IIFE, safe for every extension to load |
 | `i18n/<lang>.js` | any | Tables for the `shared.*` keys used by the files here |
-| `ui/components.js` | ISOLATED | claude.ai-styled UI kit: `CLAUDE_CLASSES`, `ClaudeModal`, alert/confirm/prompt helpers, `createClaude*` controls, tooltips, `isMobileLayout` |
+| `ui/components.js` | ISOLATED | claude.ai-styled UI kit: `CLAUDE_CLASSES`, `ClaudeModal`, alert/confirm/prompt helpers, `createClaude*` controls, `createLanguageSelect`, tooltips, `isMobileLayout` |
 | `ui/cards.js` | ISOLATED | `FloatingCard`, `makeDraggable`, `initNotificationCards` (version-update and rate-reminder cards) |
 | `assets/` | - | Images used by the cards. List them in `web_accessible_resources`. |
 | `scripts/` | - | Dev tooling, see below. Exclude it from builds (`--ignore-files "common/scripts/**"`). |
@@ -61,13 +62,16 @@ page shares, so they always agree:
 
 1. `claude_ext_language`: the user's override, set by any extension's language picker via
    `setLanguageOverride()`
-2. `claude_ext_locale_cache`: the claude.ai account locale. `refreshAccountLocale()` refetches it
-   once it is older than 24h; call `writeAccountLocale()` with the body of an intercepted
-   `PUT /api/account_profile` so a language change applies on the next load.
+2. `claude_ext_locale_cache`: the claude.ai account locale. Call `refreshAccountLocale()` once per
+   page load from one ISOLATED script: it refetches once the entry is older than 24h, and claims
+   the refresh first so other worlds and extensions don't repeat it. Load
+   `account-locale-watcher.js` in MAIN so a language change applies on claude.ai's reload.
 3. `navigator.language`
 
 A language change reloads the page. Contexts without claude.ai's localStorage (popup, background)
-should use `translate(locale, key, vars)` with a locale the content script stored for them.
+can't resolve the language: have the content script store `currentLocale()` for them, then call
+`pinLocale(locale)` before using `localize()`, or `translate(locale, key, vars)` directly.
+`createLanguageSelect()` builds the picker; save its value with `setLanguageOverride()`.
 `i18n-core.js` also publishes its API on `globalThis`, so an ES-module background can load it with a
 side-effect `import`.
 
@@ -79,8 +83,8 @@ All run from the extension repo's root:
   `manifest_<target>.json`, each with its own `manifest.json`, so all targets can be loaded unpacked
   at once. Real copies: Chrome refuses to serve symlinked files.
 - `node common/scripts/check-i18n.js [--tables <dir>]... [--src <dir>]...`: missing, extra and
-  undefined keys, placeholder mismatches, and extension tables defining `shared.*` keys. Defaults
-  to `--tables content/i18n --src content`.
+  undefined keys, placeholder mismatches, and extension tables defining `shared.*` keys. `--src`
+  takes directories or files. Defaults to `--tables content/i18n --src content`.
 - `bash common/scripts/poll-codex.sh <pr> [--trigger|--read] [--message=...]` and
   `bash common/scripts/codex-react.sh <pr> <PRRC_id> <up|down|none>`: the Codex PR review loop.
 

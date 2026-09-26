@@ -7,6 +7,7 @@ Object.assign((globalThis.CLAUDE_EXT_I18N ??= {})['hi'] ??= {}, {
 	"shared.validation_error": "सत्यापन त्रुटि",
 	"shared.none_available": "कुछ भी उपलब्ध नहीं",
 	"shared.search_placeholder": "खोजें...",
+	"shared.lang_auto": "स्वचालित (खाते की भाषा)",
 	"shared.notif.kofi_alt": "ko-fi.com पर मुझे एक कॉफ़ी खरीदें",
 	"shared.notif.updated_to": "v{version} पर अपडेट हुआ!",
 	"shared.notif.whats_new": "नया क्या है:",

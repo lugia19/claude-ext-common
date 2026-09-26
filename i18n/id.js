@@ -7,6 +7,7 @@ Object.assign((globalThis.CLAUDE_EXT_I18N ??= {})['id'] ??= {}, {
 	"shared.validation_error": "Kesalahan Validasi",
 	"shared.none_available": "Tidak ada yang tersedia",
 	"shared.search_placeholder": "Cari...",
+	"shared.lang_auto": "Otomatis (bahasa akun)",
 	"shared.notif.kofi_alt": "Traktir saya kopi di ko-fi.com",
 	"shared.notif.updated_to": "Diperbarui ke v{version}!",
 	"shared.notif.whats_new": "Yang Baru:",

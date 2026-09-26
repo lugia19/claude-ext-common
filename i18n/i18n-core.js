@@ -32,8 +32,11 @@ const LANGUAGE_NATIVE_NAMES = {
 };
 
 const I18N_OVERRIDE_KEY = 'claude_ext_language';
+// Also written, in the same {locale, expiry} format, by account-locale-watcher.js.
 const ACCOUNT_LOCALE_CACHE_KEY = 'claude_ext_locale_cache';
 const ACCOUNT_LOCALE_TTL = 24 * 60 * 60 * 1000;
+// How long a refresh in progress holds off other refreshes (other worlds, other extensions).
+const ACCOUNT_LOCALE_CLAIM = 60 * 1000;
 
 // The locales claude.ai itself offers, in the form /api/account_profile reports them.
 const ACCOUNT_LOCALES = ['en-US', 'de-DE', 'fr-FR', 'ko-KR', 'ja-JP', 'es-419', 'es-ES', 'it-IT', 'hi-IN', 'pt-BR', 'id-ID'];
@@ -49,51 +52,50 @@ function normalizeLocale(raw) {
 	return I18N_LOCALES.find(l => l === base) || 'en';
 }
 
+// {locale, expiry}, or null. locale is whatever the account reported (or null while a first
+// refresh is in flight); normalizeLocale()/accountLocale() decide what to make of it.
 function _readAccountLocaleCache() {
 	try {
 		const cached = JSON.parse(localStorage.getItem(ACCOUNT_LOCALE_CACHE_KEY));
-		if (cached && ACCOUNT_LOCALES.includes(cached.locale)) return cached;
+		if (cached && typeof cached.expiry === 'number') return cached;
 	} catch (e) { /* no storage, or bad JSON */ }
 	return null;
 }
 
-// Record the account locale, e.g. from the body of a PUT /api/account_profile. Ignores anything
-// that isn't a locale claude.ai offers.
-function writeAccountLocale(locale) {
-	if (!ACCOUNT_LOCALES.includes(locale)) return;
+function _writeAccountLocaleCache(locale, ttl) {
 	try {
-		localStorage.setItem(ACCOUNT_LOCALE_CACHE_KEY, JSON.stringify({
-			locale,
-			expiry: Date.now() + ACCOUNT_LOCALE_TTL
-		}));
+		localStorage.setItem(ACCOUNT_LOCALE_CACHE_KEY, JSON.stringify({ locale, expiry: Date.now() + ttl }));
 	} catch (e) { /* storage blocked */ }
+}
+
+// Record the account locale as the account reports it (e.g. from GET /api/account_profile).
+function writeAccountLocale(locale) {
+	if (locale && typeof locale === 'string') _writeAccountLocaleCache(locale, ACCOUNT_LOCALE_TTL);
 }
 
 // Refetch the account locale once the cache has expired. Deliberately not on every load: right
 // after a language change the GET can briefly still return the old locale, while the PUT watcher
-// has already written the new one.
+// has already written the new one. Call it from one world only.
 async function refreshAccountLocale() {
 	const cached = _readAccountLocaleCache();
-	if (cached && Date.now() < cached.expiry) return cached.locale;
+	if (cached && Date.now() < cached.expiry) return;
+	// Claim the refresh first, so the other extension's content script doesn't fetch it too.
+	_writeAccountLocaleCache(cached?.locale ?? null, ACCOUNT_LOCALE_CLAIM);
 	try {
 		const response = await fetch('/api/account_profile');
-		if (response.ok) {
-			const data = await response.json();
-			writeAccountLocale(data.locale);
-			if (ACCOUNT_LOCALES.includes(data.locale)) return data.locale;
-		}
+		if (response.ok) writeAccountLocale((await response.json()).locale);
 	} catch (e) {
 		console.error('Failed to fetch account locale:', e);
 	}
-	return accountLocale();
 }
 
 // The account locale in claude.ai's own form (en-US, ja-JP, ...), e.g. for completion requests.
 // Unlike currentLocale() this ignores the extension language override.
 function accountLocale() {
-	const cached = _readAccountLocaleCache();
-	if (cached) return cached.locale;
-	return ACCOUNT_LOCALES.includes(navigator.language) ? navigator.language : 'en-US';
+	const cached = _readAccountLocaleCache()?.locale;
+	if (ACCOUNT_LOCALES.includes(cached)) return cached;
+	const browser = globalThis.navigator?.language;
+	return ACCOUNT_LOCALES.includes(browser) ? browser : 'en-US';
 }
 
 function getLanguageOverride() {
@@ -117,9 +119,8 @@ function _resolveLocale() {
 	if (override) return normalizeLocale(override);
 	// Expiry deliberately ignored: an expired entry is still a better guess than navigator.language,
 	// and refreshAccountLocale() updates it for the next load.
-	const cached = _readAccountLocaleCache();
-	if (cached) return normalizeLocale(cached.locale);
-	return normalizeLocale(globalThis.navigator?.language);
+	const cached = _readAccountLocaleCache()?.locale;
+	return normalizeLocale(cached || globalThis.navigator?.language);
 }
 
 let _i18nLocale = null;
@@ -130,15 +131,16 @@ function currentLocale() {
 	return _i18nLocale ??= _resolveLocale();
 }
 
-/**
- * Look up a UI string for an explicit locale. Falls back to English, then to the key itself.
- * @param {string} locale - Any language tag, normalized with normalizeLocale()
- * @param {string} key - Dotted key, e.g. 'shared.cancel'
- * @param {Object} [vars] - Values for {name} placeholders
- */
-function translate(locale, key, vars) {
+// For contexts that can't see claude.ai's localStorage (an extension popup): use the locale a
+// content script stored for them, so localize() works there too.
+function pinLocale(locale) {
+	_i18nLocale = normalizeLocale(locale);
+	_numberFormat = null;
+}
+
+function _lookup(locale, key, vars) {
 	const tables = globalThis.CLAUDE_EXT_I18N || {};
-	let str = tables[normalizeLocale(locale)]?.[key] ?? tables.en?.[key] ?? key;
+	let str = tables[locale]?.[key] ?? tables.en?.[key] ?? key;
 	if (vars) {
 		// Function replace, so a '$' in a value is never read as a replacement pattern.
 		str = str.replace(/\{(\w+)\}/g, (_, k) => (vars[k] !== undefined && vars[k] !== null ? String(vars[k]) : ''));
@@ -146,19 +148,31 @@ function translate(locale, key, vars) {
 	return str;
 }
 
+/**
+ * Look up a UI string for an explicit locale. Falls back to English, then to the key itself.
+ * @param {string} locale - Any language tag, normalized with normalizeLocale()
+ * @param {string} key - Dotted key, e.g. 'shared.cancel'
+ * @param {Object} [vars] - Values for {name} placeholders
+ */
+function translate(locale, key, vars) {
+	return _lookup(normalizeLocale(locale), key, vars);
+}
+
 // Look up a UI string in the current language.
 function localize(key, vars) {
-	return translate(currentLocale(), key, vars);
+	return _lookup(currentLocale(), key, vars);
 }
 
+let _numberFormat = null;
 function fmtNum(n) {
-	return Number(n).toLocaleString(currentLocale());
+	return (_numberFormat ??= new Intl.NumberFormat(currentLocale())).format(Number(n));
 }
 
-// Declarations above are only globals in a classic script. Publish them explicitly as well, so an
-// ES module (a background service worker) can use this file through a side-effect import.
+// Declarations above are only globals in a classic script. Publish the public ones explicitly as
+// well, so an ES module (a background service worker) can use this file through a side-effect
+// import. Keep this list in sync with the public functions above.
 Object.assign(globalThis, {
-	I18N_LOCALES, LANGUAGE_NATIVE_NAMES, ACCOUNT_LOCALES, normalizeLocale, writeAccountLocale,
-	refreshAccountLocale, accountLocale, getLanguageOverride, setLanguageOverride, currentLocale,
-	translate, localize, fmtNum,
+	I18N_LOCALES, LANGUAGE_NATIVE_NAMES, normalizeLocale, writeAccountLocale, refreshAccountLocale,
+	accountLocale, getLanguageOverride, setLanguageOverride, currentLocale, pinLocale, translate,
+	localize, fmtNum,
 });

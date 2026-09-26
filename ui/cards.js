@@ -1,6 +1,6 @@
 // cards.js (claude-ext-common)
 // Draggable floating cards, plus the version-update ("what's new") and rate-reminder cards built on
-// them. ISOLATED world only: needs chrome.runtime/chrome.storage. Classic script, no IIFE: everything
+// them. ISOLATED world only: needs chrome.runtime. Classic script, no IIFE: everything
 // is a global of the loading world. Needs localize() (common/i18n) loaded first.
 //
 // Styled with claude.ai's own classes plus inline styles only. The page DOM is shared with every
@@ -15,8 +15,9 @@ const CARD_ASSETS = {
 	rate: 'common/assets/rate-badge.png',
 };
 
+// Firefox exposes window.chrome to extensions too, so only the user agent tells them apart.
 function isChromeBrowser() {
-	return !!window.chrome && (!!window.chrome.webstore || !!window.chrome.runtime) && !navigator.userAgent.includes('Firefox');
+	return !navigator.userAgent.includes('Firefox');
 }
 
 // Pointer-driven dragging (mouse, touch, pen), kept inside the viewport. Returns a cleanup function.
@@ -79,10 +80,7 @@ function makeDraggable(element, dragHandle = null) {
 
 // A small draggable card, top-right by default. Build it with the add* methods, then show().
 class FloatingCard {
-	constructor({ maxWidth = '280px', centered = true } = {}) {
-		// The desktop app's content pane has a toolbar at the top; clear it.
-		const isDesktopApp = !!document.querySelector('.dframe-content-inner');
-		this.defaultPosition = { top: isDesktopApp ? '40px' : '20px', right: '20px' };
+	constructor() {
 		this.header = null;
 		this.element = document.createElement('div');
 		this.element.className = 'bg-bg-100 border border-border-400 text-text-000';
@@ -93,8 +91,8 @@ class FloatingCard {
 			zIndex: '10000',
 			fontSize: '14px',
 			boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-			maxWidth,
-			textAlign: centered ? 'center' : 'left',
+			maxWidth: '280px',
+			textAlign: 'center',
 		});
 	}
 
@@ -172,8 +170,8 @@ class FloatingCard {
 		return link;
 	}
 
-	addKofiButton(href = KOFI_URL) {
-		return this.addImageButton(href, CARD_ASSETS.kofi, localize('shared.notif.kofi_alt'));
+	addKofiButton() {
+		return this.addImageButton(KOFI_URL, CARD_ASSETS.kofi, localize('shared.notif.kofi_alt'));
 	}
 
 	addCloseButton() {
@@ -197,14 +195,12 @@ class FloatingCard {
 		return this;
 	}
 
-	show(position) {
-		['top', 'right', 'bottom', 'left'].forEach(prop => { this.element.style[prop] = null; });
-		for (const [key, value] of Object.entries(position || this.defaultPosition)) {
-			this.element.style[key] = typeof value === 'number' ? `${value}px` : value;
-		}
-		// In the desktop app, mount in the content pane so cards don't cover the window controls.
-		// The mount must be a positioning context for top/right to be relative to it.
+	// Top-right. In the desktop app, mount in the content pane (below its toolbar) so cards don't
+	// cover the window controls; the mount must be a positioning context for top/right to apply.
+	show() {
 		const desktopMount = document.querySelector('.dframe-content-inner');
+		this.element.style.top = desktopMount ? '40px' : '20px';
+		this.element.style.right = '20px';
 		if (desktopMount) {
 			if (getComputedStyle(desktopMount).position === 'static') {
 				desktopMount.style.position = 'relative';
@@ -246,14 +242,14 @@ async function readPatchNotes() {
  * @param {number} [opts.rateDelayDays=8]
  * @param {(card: FloatingCard, kind: 'version'|'rate') => void} [opts.decorate] - Add extra content
  *   to a card before it is finished and shown
- * @param {Array<() => Promise<void>>} [opts.extraChecks] - Further checks, run after the built-in ones
  */
-async function initNotificationCards({ name, releasesUrl, storeUrls, storage, rateDelayDays = 8, decorate = null, extraChecks = [] }) {
+async function initNotificationCards({ name, releasesUrl, storeUrls, storage, rateDelayDays = 8, decorate = null }) {
 	// Let the page (and any other extension's UI) settle first.
 	await new Promise(resolve => setTimeout(resolve, 1000));
 
 	const currentVersion = chrome.runtime.getManifest().version;
-	const previousVersion = await storage.get('previousVersion');
+	const [previousVersion, rateReminderTime, rateReminderShown] = await Promise.all(
+		['previousVersion', 'rateReminderTime', 'rateReminderShown'].map(key => storage.get(key)));
 	if (previousVersion !== currentVersion) {
 		await storage.set('previousVersion', currentVersion);
 		// No previous version: a fresh install, nothing to announce.
@@ -270,10 +266,9 @@ async function initNotificationCards({ name, releasesUrl, storeUrls, storage, ra
 		}
 	}
 
-	const rateReminderTime = await storage.get('rateReminderTime');
 	if (!rateReminderTime) {
 		await storage.set('rateReminderTime', Date.now() + rateDelayDays * 24 * 60 * 60 * 1000);
-	} else if (!(await storage.get('rateReminderShown')) && Date.now() >= rateReminderTime) {
+	} else if (!rateReminderShown && Date.now() >= rateReminderTime) {
 		await storage.set('rateReminderShown', true);
 		const card = new FloatingCard();
 		card.addHeader(name);
@@ -283,6 +278,4 @@ async function initNotificationCards({ name, releasesUrl, storeUrls, storage, ra
 		decorate?.(card, 'rate');
 		card.finish().show();
 	}
-
-	for (const check of extraChecks) await check();
 }

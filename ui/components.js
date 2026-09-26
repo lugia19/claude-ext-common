@@ -514,6 +514,16 @@ function createClaudeSelect(options, selectedValue = '', onChange = null) {
 	return select;
 }
 
+// Language picker select: Auto plus every UI language in its own script, preset to the current
+// override. Save its value with setLanguageOverride() and reload the page.
+function createLanguageSelect() {
+	const options = [
+		{ value: '', label: localize('shared.lang_auto') },
+		...I18N_LOCALES.map(l => ({ value: l, label: LANGUAGE_NATIVE_NAMES[l] })),
+	];
+	return createClaudeSelect(options, getLanguageOverride());
+}
+
 function createClaudeSearchableSelect(options, selectedValue = '', onChange = null) {
 	let currentOptions = [...options];
 	let selectedVal = selectedValue;

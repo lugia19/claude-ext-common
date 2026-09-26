@@ -7,6 +7,7 @@ Object.assign((globalThis.CLAUDE_EXT_I18N ??= {})['fr'] ??= {}, {
 	"shared.validation_error": "Erreur de validation",
 	"shared.none_available": "Aucun disponible",
 	"shared.search_placeholder": "Rechercher...",
+	"shared.lang_auto": "Auto (langue du compte)",
 	"shared.notif.kofi_alt": "Offrez-moi un café sur ko-fi.com",
 	"shared.notif.updated_to": "Mis à jour vers la v{version} !",
 	"shared.notif.whats_new": "Nouveautés :",

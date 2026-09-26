@@ -7,6 +7,7 @@ Object.assign((globalThis.CLAUDE_EXT_I18N ??= {})['ko'] ??= {}, {
 	"shared.validation_error": "유효성 검사 오류",
 	"shared.none_available": "사용 가능한 항목 없음",
 	"shared.search_placeholder": "검색...",
+	"shared.lang_auto": "자동(계정 언어)",
 	"shared.notif.kofi_alt": "ko-fi.com에서 커피 한 잔 사주기",
 	"shared.notif.updated_to": "v{version}(으)로 업데이트되었습니다!",
 	"shared.notif.whats_new": "새로운 기능:",
