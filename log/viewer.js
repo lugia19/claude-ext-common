@@ -103,7 +103,7 @@ els.clear.addEventListener('click', async () => {
 	try {
 		await (globalThis.browser ?? globalThis.chrome).runtime.sendMessage({ type: 'CLAUDE_EXT_LOG_CLEAR' });
 	} catch (e) {
-		await storage.set({ debug_logs: [] });
+		await storage.set({ debug_logs: [], debug_logs_cleared_at: new Date().toISOString() });
 	}
 	entries = [];
 	updateSenders();

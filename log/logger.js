@@ -72,13 +72,18 @@ function _logStringify(arg) {
 }
 
 // Append a batch to debug_logs. Chained, so one context never interleaves two read-modify-writes.
-// If storage is full, keep only the newest entries so it heals itself.
+// Kept in time order (tabs' batches can arrive out of order), so the cap drops the oldest entries.
+// Entries older than the last Clear were queued before it and are dropped. If storage is full, keep
+// only the newest entries so it heals itself.
 function _logAppend(entries) {
 	_logWriteChain = _logWriteChain.then(async () => {
 		const storage = _logStorage();
 		try {
-			const { debug_logs: logs = [] } = await storage.get('debug_logs');
-			logs.push(...entries);
+			const { debug_logs: logs = [], debug_logs_cleared_at: clearedAt = '' } =
+				await storage.get(['debug_logs', 'debug_logs_cleared_at']);
+			logs.push(...entries.filter(e => !(e.timestamp < clearedAt)));
+			// ISO timestamps sort as strings; the sort is stable, so equal times keep arrival order.
+			logs.sort((a, b) => (a.timestamp < b.timestamp ? -1 : a.timestamp > b.timestamp ? 1 : 0));
 			await storage.set({ debug_logs: logs.slice(-_LOG_MAX_ENTRIES) });
 		} catch (e) {
 			try {
@@ -112,8 +117,11 @@ function _logQueue(entries) {
 }
 
 // Empty debug_logs, queued behind any append already in progress so it can't bring old entries back.
+// The cutoff also drops entries still batched in a tab when Clear was pressed, whenever they arrive.
 function _logClear() {
-	_logWriteChain = _logWriteChain.then(() => _logStorage().set({ debug_logs: [] }).catch(() => { }));
+	const clearedAt = new Date().toISOString();
+	_logWriteChain = _logWriteChain.then(() =>
+		_logStorage().set({ debug_logs: [], debug_logs_cleared_at: clearedAt }).catch(() => { }));
 	return _logWriteChain;
 }
 
