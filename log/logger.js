@@ -32,6 +32,7 @@ const _LOG_RELAY_TYPE = 'CLAUDE_EXT_LOG';          // MAIN -> ISOLATED, via wind
 const _LOG_APPEND_TYPE = 'CLAUDE_EXT_LOG_APPEND';  // content -> background, via runtime.sendMessage
 const _LOG_CLEAR_TYPE = 'CLAUDE_EXT_LOG_CLEAR';    // viewer -> background, via runtime.sendMessage
 const _LOG_LEVELS = ['debug', 'warn', 'error'];
+const _LOG_MAX_RELAY_BATCH = 50; // entries per relayed message (the MAIN world sends one at a time)
 
 const _logConfig = { app: 'ext', prefix: '[Ext]', role: 'content' };
 let _logPending = [];
@@ -147,11 +148,14 @@ function _logInstallListeners() {
 	}
 	if (typeof window === 'undefined' || !window.addEventListener) return;
 
-	// Entries from this app's MAIN-world scripts.
+	// Entries from this app's MAIN-world scripts. claude.ai's own scripts share that world and could
+	// post these too, so every entry is rebuilt from checked, size-capped fields: a forged flood can't
+	// grow storage.local past the usual cap or feed the viewer malformed entries.
 	window.addEventListener('message', (event) => {
 		if (event.source !== window || event.data?.type !== _LOG_RELAY_TYPE) return;
 		if (event.data.app !== _logConfig.app || !Array.isArray(event.data.entries)) return;
-		_logQueue(event.data.entries);
+		const entries = event.data.entries.slice(0, _LOG_MAX_RELAY_BATCH).map(_logSanitize).filter(Boolean);
+		if (entries.length) _logQueue(entries);
 	});
 	// Don't lose the last second of entries to a navigation, reload or close.
 	window.addEventListener('pagehide', () => { _logPageHidden = true; _logFlush(); });
@@ -170,14 +174,29 @@ function configureLogger({ app, prefix, role } = {}) {
 	_logInstallListeners();
 }
 
+function _logTruncate(message) {
+	return message.length > _LOG_MAX_MESSAGE
+		? message.slice(0, _LOG_MAX_MESSAGE) + `…[truncated ${message.length - _LOG_MAX_MESSAGE} chars]`
+		: message;
+}
+
+// A relayed entry rebuilt from its expected fields, or null if it isn't one.
+function _logSanitize(entry) {
+	if (!entry || typeof entry !== 'object' || typeof entry.message !== 'string') return null;
+	const time = new Date(entry.timestamp);
+	return {
+		timestamp: isNaN(time) ? new Date().toISOString() : time.toISOString(),
+		sender: String(entry.sender ?? '').slice(0, 64) || 'page',
+		level: _LOG_LEVELS.includes(entry.level) ? entry.level : 'debug',
+		message: _logTruncate(entry.message),
+	};
+}
+
 function _logWrite(sender, level, args) {
 	const consoleMethod = level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'log';
 	console[consoleMethod](`${_logConfig.prefix}[${sender}]`, ...args);
 
-	let message = args.map(_logStringify).join(' ');
-	if (message.length > _LOG_MAX_MESSAGE) {
-		message = message.slice(0, _LOG_MAX_MESSAGE) + `…[truncated ${message.length - _LOG_MAX_MESSAGE} chars]`;
-	}
+	const message = _logTruncate(args.map(_logStringify).join(' '));
 	const entry = { timestamp: new Date().toISOString(), sender, level, message };
 	if (_logStorage()) {
 		_logQueue([entry]);
