@@ -22,6 +22,7 @@ There is no bundler. Every file is a plain script listed directly in the extensi
 | `i18n/account-locale-watcher.js` | MAIN | Records the account language from `PUT /api/account_profile`. IIFE, safe for every extension to load |
 | `i18n/<lang>.js` | any | Tables for the `shared.*` keys used by the files here |
 | `claude/page.js` | ISOLATED (+ MAIN, one extension) | `getActiveOrgId`, `getConversationId`, `getIncognitoConversationId`, `isIncognito`, `getProjectId`, and page predicates (`isHomePage`, `isChatPage`, `isProjectPage`, `isCodePage`, `isCoworkPage`). URL, cookie and sessionStorage only, never the DOM |
+| `net/net.js` | any (MAIN-safe) | `globalThis.ClaudeExtNet`: fetch arguments (`getFetchUrl`, `getFetchMethod`), API URLs (`getApiIds`, `isCompletionUrl`), rebuilt responses (`sanitizedHeaders`, `jsonResponse`), request bodies (`readJsonRequestBody`, `withJsonRequestBody`, `isGzipRequest`, `isGzipBytes`, `gunzipBytes`), SSE (`createSseSplitter`, `readSseEvents`) and `isKillSwitchOn`. Append-only, see Rules |
 | `ui/components.js` | ISOLATED | claude.ai-styled UI kit: `CLAUDE_CLASSES`, `ClaudeModal`, alert/confirm/prompt helpers, `createClaude*` controls, `createLanguageSelect`, tooltips, `isMobileLayout` |
 | `ui/cards.js` | ISOLATED | `FloatingCard`, `makeDraggable`, `initNotificationCards` (version-update and rate-reminder cards) |
 | `assets/` | - | Images used by the cards. List them in `web_accessible_resources`. |
@@ -41,6 +42,10 @@ These exist because two extensions load this code into the same page.
   two versions of this repo would share one set of globals. So only **one** extension (the Toolbox)
   may load global-declaring files from here into MAIN. Anything that both extensions need in MAIN
   must be an IIFE with no top-level bindings.
+- **`net/net.js` is append-only.** Both extensions load it into MAIN, and it fills
+  `globalThis.ClaudeExtNet` member by member with `??=`, so whichever copy loads first provides each
+  member - possibly an older version than yours. Never change what a published member does or
+  returns; add a member with a new name instead.
 - **The page DOM is shared too.** Don't inject a stylesheet with a fixed id or shared class names
   whose rules could differ between versions. Style with claude.ai's own Tailwind/CDS classes and
   inline styles.
