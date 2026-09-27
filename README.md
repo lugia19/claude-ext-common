@@ -114,6 +114,15 @@ All run from the extension repo's root:
   unless `common/` is clean (untracked and ignored files count), checked out at the commit the
   extension pins, and that commit matches common's `main` (by content: a merge commit past the pin
   is fine). A failed fetch stops it too.
+- `node common/scripts/release.js <major|minor|patch|X.Y.Z> "<title>"`: write `update_patchnotes.txt`
+  first. Bumps the three manifests, commits and pushes, tags `vX.Y.Z`, runs `build.bat` and creates a
+  **draft** GitHub release (patch notes as the body, the three zips attached). Re-running the same
+  command resumes. Nothing reaches the stores.
+- `node common/scripts/publish.js <X.Y.Z> [--only=chrome,firefox,github]`: once the draft's zips are
+  tested. After you type the version to confirm, submits the Chrome zip to the Chrome Web Store (API
+  v2, service account) and the Firefox zip to AMO (listed, with the draft's notes), then publishes
+  the GitHub release. Credentials live in `%USERPROFILE%\.claude-ext-publish.json`, never in a repo;
+  the format is at the top of the script.
 - `bash common/scripts/poll-codex.sh <pr> [--trigger|--read] [--message=...]` and
   `bash common/scripts/codex-react.sh <pr> <PRRC_id> <up|down|none>`: the Codex PR review loop.
 
