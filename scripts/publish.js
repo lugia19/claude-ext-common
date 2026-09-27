@@ -63,10 +63,16 @@ const unknown = steps.filter((s) => !STEPS.includes(s));
 if (unknown.length) fail(`Unknown step(s) ${unknown.join(', ')}: use ${STEPS.join(', ')}.`);
 const tag = `v${version}`;
 
-if (!fs.existsSync(CREDENTIALS)) fail(`No credentials at ${CREDENTIALS} (see the top of this script).`);
-const credentials = JSON.parse(fs.readFileSync(CREDENTIALS, 'utf8'));
-const geckoId = JSON.parse(fs.readFileSync('manifest_firefox.json', 'utf8')).browser_specific_settings?.gecko?.id;
-if (!geckoId) fail('No browser_specific_settings.gecko.id in manifest_firefox.json.');
+// Only the store steps need credentials and the add-on id: --only=github works without them.
+const storeSteps = steps.some((s) => s === 'chrome' || s === 'firefox');
+let credentials = {};
+let geckoId = null;
+if (storeSteps) {
+	if (!fs.existsSync(CREDENTIALS)) fail(`No credentials at ${CREDENTIALS} (see the top of this script).`);
+	credentials = JSON.parse(fs.readFileSync(CREDENTIALS, 'utf8'));
+	geckoId = JSON.parse(fs.readFileSync('manifest_firefox.json', 'utf8')).browser_specific_settings?.gecko?.id;
+	if (!geckoId) fail('No browser_specific_settings.gecko.id in manifest_firefox.json.');
+}
 
 if (steps.includes('chrome')) {
 	const c = credentials.chrome;

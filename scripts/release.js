@@ -8,8 +8,9 @@
 // its body and the three zips attached. Nothing reaches the stores: that's publish.js, once the draft
 // has been tested.
 //
-// Re-running the same command resumes: the bump is skipped when the manifests already have the version,
-// the tag when it's already on HEAD. Windows only (build.bat); needs gh, logged in.
+// Re-running with the exact version (release.js X.Y.Z "<title>") resumes: the bump is skipped when the
+// manifests already have the version, the tag when it's already on HEAD. Every failure after the bump
+// prints that command. Windows only (build.bat); needs gh, logged in.
 'use strict';
 
 const { execFileSync } = require('child_process');
@@ -58,6 +59,7 @@ function nextVersion() {
 }
 const version = nextVersion();
 const tag = `v${version}`;
+const resume = `node common/scripts/release.js ${version} "${title}"`;
 
 // ======== checks, before anything changes ========
 
@@ -69,6 +71,11 @@ try {
 	fail(`Couldn't fetch origin: ${(e.stderr || e.message).trim()}`);
 }
 if (git('rev-parse', 'HEAD') !== git('rev-parse', 'origin/main')) fail('main isn\'t in sync with origin/main (pull or push first).');
+
+// A symbolic bump right after an unfinished release would bump again: finish that one instead.
+if (!/^\d/.test(bump) && git('log', '-1', '--format=%s') === `chore: release ${current}` && !ok('gh', ['release', 'view', `v${current}`])) {
+	fail(`HEAD is the unfinished release of ${current} (no GitHub release yet). To finish it:\n  node common/scripts/release.js ${current} "${title}"`);
+}
 
 const dirty = git('status', '--porcelain').split('\n').filter(Boolean).map((line) => line.slice(3));
 const unexpected = dirty.filter((file) => file !== NOTES);
@@ -94,8 +101,7 @@ if (previousTag) {
 const notes = fs.readFileSync(NOTES, 'utf8').split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
 if (!notes.length) fail(`${NOTES} is empty.`);
 
-if (ok('gh', ['release', 'view', tag])) fail(`A GitHub release ${tag} already exists (delete it to redo it).`);
-const tagAt = (() => {
+if (ok('gh', ['release', 'view', tag])) fail(`A GitHub release ${tag} already exists (delete it to redo it).`);const tagAt = (() => {
 	try {
 		return git('rev-parse', `${tag}^{commit}`);
 	} catch (e) {
@@ -142,7 +148,7 @@ step('Building...');
 try {
 	run('cmd', ['/c', 'build.bat'], { inherit: true });
 } catch (e) {
-	fail(`build.bat failed. Fix it and re-run the same command: the version and tag are done.`);
+	fail(`build.bat failed. The version and tag are done; fix it and resume with:\n  ${resume}`);
 }
 const artifacts = fs.readdirSync('web-ext-artifacts');
 const zips = TARGETS.map((target) => {
@@ -158,7 +164,7 @@ fs.writeFileSync(notesFile, notes.map((line) => `- ${line}`).join('\n') + '\n');
 try {
 	run('gh', ['release', 'create', tag, '--draft', '--verify-tag', '--title', title, '--notes-file', notesFile, ...zips]);
 } catch (e) {
-	fail(`Creating the draft release failed: ${(e.stderr || e.message).trim()}\nRe-run the same command to retry.`);
+	fail(`Creating the draft release failed: ${(e.stderr || e.message).trim()}\nResume with:\n  ${resume}`);
 } finally {
 	fs.rmSync(notesFile, { force: true });
 }
