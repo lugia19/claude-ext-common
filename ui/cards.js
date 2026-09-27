@@ -79,10 +79,12 @@ function makeDraggable(element, dragHandle = null) {
 }
 
 // A small draggable card, top-right by default. Build it with the add* methods, then show().
+// stackOrder: where it goes among the cards on the page, lower first (see restackCards).
 class FloatingCard {
-	constructor() {
+	constructor({ stackOrder = 0 } = {}) {
 		this.header = null;
 		this.element = document.createElement('div');
+		this.element.setAttribute('data-claude-ext-card', String(stackOrder));
 		this.element.className = 'bg-bg-100 border border-border-400 text-text-000';
 		Object.assign(this.element.style, {
 			position: 'fixed',
@@ -200,18 +202,11 @@ class FloatingCard {
 
 	// Top-right. In the desktop app, mount in the content pane (below its toolbar) so cards don't
 	// cover the window controls; the mount must be a positioning context for top/right to apply.
-	// Both extensions show cards (often together, right after an update) and share the DOM, so a
-	// card goes below any already mounted instead of covering it - but never past the bottom, where
-	// it couldn't be reached or closed; out of room, it overlaps the lower end of the stack. The
-	// same holds when the viewport later shrinks (window resize, phone rotation, on-screen keyboard).
+	// The viewport can later shrink (window resize, phone rotation, on-screen keyboard): the card is
+	// then pulled back up, so it stays reachable.
 	show() {
 		const desktopMount = document.querySelector('.dframe-content-inner');
 		const mount = desktopMount || document.body;
-		const minTop = desktopMount ? 40 : 20;
-		const below = [...mount.querySelectorAll(':scope > [data-claude-ext-card]')]
-			.reduce((top, card) => Math.max(top, card.offsetTop + card.offsetHeight + 10), 0);
-		this.element.setAttribute('data-claude-ext-card', '');
-		this.element.style.top = `${minTop}px`;
 		this.element.style.right = '20px';
 		if (desktopMount) {
 			if (getComputedStyle(desktopMount).position === 'static') {
@@ -220,13 +215,15 @@ class FloatingCard {
 			this.element.style.position = 'absolute';
 		}
 		mount.appendChild(this.element);
-		// The visible part: the mount can be taller than the viewport.
-		const maxTop = () => window.innerHeight - (desktopMount ? desktopMount.getBoundingClientRect().top : 0)
-			- this.element.offsetHeight - 10;
-		this.element.style.top = `${Math.max(minTop, Math.min(below, maxTop()))}px`;
-		// Only ever pulls the card up, so a dragged card otherwise stays where it was put.
+		restackCards(mount);
+		// A stacked card is laid out again with the stack; a dragged one is only pulled up, so it otherwise
+		// stays where it was put.
 		this.keepInView = () => {
-			this.element.style.top = `${Math.max(0, Math.min(this.element.offsetTop, maxTop()))}px`;
+			if (!this.element.style.left) {
+				restackCards(mount);
+				return;
+			}
+			this.element.style.top = `${Math.max(0, Math.min(this.element.offsetTop, maxCardTop(mount, this.element)))}px`;
 		};
 		window.addEventListener('resize', this.keepInView);
 	}
@@ -234,8 +231,44 @@ class FloatingCard {
 	remove() {
 		if (this.cleanup) this.cleanup();
 		if (this.keepInView) window.removeEventListener('resize', this.keepInView);
+		const mount = this.element.parentElement;
 		this.element.remove();
+		if (mount) restackCards(mount); // the cards below move up into the room it leaves
 	}
+}
+
+// How much of a card stays visible under the next one when the stack has to overlap: its header.
+const CARD_HEADER_PEEK = 40;
+
+// The lowest top that keeps a card in view. The mount can be taller than the viewport.
+function maxCardTop(mount, card) {
+	const mountTop = mount === document.body ? 0 : mount.getBoundingClientRect().top;
+	return window.innerHeight - mountTop - card.offsetHeight - 10;
+}
+
+// Both extensions show cards (often together, right after an update) and share the DOM, so every
+// card in the mount is laid out as one stack: by stackOrder, then in the order they appeared. It runs
+// on every show(), because the other extension's card may well appear first. Never past the bottom,
+// where a card couldn't be reached or closed: out of room, it overlaps the lower end of the stack.
+// Dragged cards (they get a left) keep their place and leave the stack.
+function restackCards(mount) {
+	const minTop = mount === document.body ? 20 : 40;
+	const cards = [...mount.querySelectorAll(':scope > [data-claude-ext-card]')]
+		.filter((card) => !card.style.left)
+		.sort((a, b) => (Number(a.getAttribute('data-claude-ext-card')) || 0) - (Number(b.getAttribute('data-claude-ext-card')) || 0));
+	let top = minTop;
+	let prevTop = -Infinity;
+	cards.forEach((card, i) => {
+		// Pulled up to stay in view, but never over the previous card's header (its title and close
+		// button): if the stack is taller than the viewport, the lower end of a card may go off-screen
+		// instead, and closing any card makes room.
+		const cardTop = Math.max(minTop, prevTop + CARD_HEADER_PEEK, Math.min(top, maxCardTop(mount, card)));
+		card.style.top = `${cardTop}px`;
+		prevTop = cardTop;
+		// Paint in stack order too, so where cards overlap, each covers only the end of the one above.
+		card.style.zIndex = String(10000 + i);
+		top = card.offsetTop + card.offsetHeight + 10;
+	});
 }
 
 // update_patchnotes.txt in the extension root (web-accessible): one highlight per non-empty line.
@@ -260,10 +293,12 @@ async function readPatchNotes() {
  * @param {{get: (name: string) => Promise<any>, set: (name: string, value: any) => Promise<void>}} opts.storage
  *   Persists 'previousVersion', 'rateReminderTime' and 'rateReminderShown' wherever the extension likes.
  * @param {number} [opts.rateDelayDays=8]
+ * @param {number} [opts.stackOrder=0] - Where these cards go among other cards on the page, lower
+ *   first (see restackCards)
  * @param {(card: FloatingCard, kind: 'version'|'rate') => void} [opts.decorate] - Add extra content
  *   to a card before it is finished and shown
  */
-async function initNotificationCards({ name, releasesUrl, storeUrls, storage, rateDelayDays = 8, decorate = null }) {
+async function initNotificationCards({ name, releasesUrl, storeUrls, storage, rateDelayDays = 8, stackOrder = 0, decorate = null }) {
 	// Let the page (and any other extension's UI) settle first.
 	await new Promise(resolve => setTimeout(resolve, 1000));
 
@@ -274,7 +309,7 @@ async function initNotificationCards({ name, releasesUrl, storeUrls, storage, ra
 		await storage.set('previousVersion', currentVersion);
 		// No previous version: a fresh install, nothing to announce.
 		if (previousVersion) {
-			const card = new FloatingCard();
+			const card = new FloatingCard({ stackOrder });
 			card.addHeader(name);
 			card.addText(localize('shared.notif.updated_to', { version: currentVersion }));
 			const highlights = await readPatchNotes();
@@ -290,7 +325,7 @@ async function initNotificationCards({ name, releasesUrl, storeUrls, storage, ra
 		await storage.set('rateReminderTime', Date.now() + rateDelayDays * 24 * 60 * 60 * 1000);
 	} else if (!rateReminderShown && Date.now() >= rateReminderTime) {
 		await storage.set('rateReminderShown', true);
-		const card = new FloatingCard();
+		const card = new FloatingCard({ stackOrder });
 		card.addHeader(name);
 		card.addText(localize('shared.notif.enjoying', { name }));
 		card.addText(localize('shared.notif.consider_rating'), { bold: true });
