@@ -50,8 +50,15 @@ if (new Set(versions).size !== 1) fail(`The manifests disagree on the version: $
 const current = versions[0];
 
 function nextVersion() {
-	if (/^\d+\.\d+\.\d+$/.test(bump)) return bump;
 	const [major, minor, patch] = current.split('.').map(Number);
+	if (/^\d+\.\d+\.\d+$/.test(bump)) {
+		// Equal resumes an unfinished release; lower is a typo that would ship a downgrade.
+		const [a, b, c] = bump.split('.').map(Number);
+		if (a < major || (a === major && (b < minor || (b === minor && c < patch)))) {
+			fail(`${bump} is lower than the current version ${current}.`);
+		}
+		return bump;
+	}
 	if (bump === 'major') return `${major + 1}.0.0`;
 	if (bump === 'minor') return `${major}.${minor + 1}.0`;
 	if (bump === 'patch') return `${major}.${minor}.${patch + 1}`;
@@ -148,7 +155,12 @@ if (current === version) {
 	}
 	git('add', ...MANIFESTS, NOTES);
 	git('commit', '--quiet', '-m', `chore: release ${version}`);
-	git('push', '--quiet', 'origin', 'main');
+	try {
+		git('push', '--quiet', 'origin', 'main');
+	} catch (e) {
+		fail(`The release commit is made, but pushing main failed: ${(e.stderr || e.message).trim()}\n`
+			+ `Push it (git push), then resume with:\n  ${resume}`);
+	}
 	step(`Bumped ${current} -> ${version}, committed and pushed.`);
 }
 
