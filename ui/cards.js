@@ -231,7 +231,9 @@ class FloatingCard {
 	remove() {
 		if (this.cleanup) this.cleanup();
 		if (this.keepInView) window.removeEventListener('resize', this.keepInView);
+		const mount = this.element.parentElement;
 		this.element.remove();
+		if (mount) restackCards(mount); // the cards below move up into the room it leaves
 	}
 }
 
