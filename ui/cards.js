@@ -216,8 +216,13 @@ class FloatingCard {
 		}
 		mount.appendChild(this.element);
 		restackCards(mount);
-		// Only ever pulls the card up, so a dragged card otherwise stays where it was put.
+		// A stacked card is laid out again with the stack; a dragged one is only pulled up, so it otherwise
+		// stays where it was put.
 		this.keepInView = () => {
+			if (!this.element.style.left) {
+				restackCards(mount);
+				return;
+			}
 			this.element.style.top = `${Math.max(0, Math.min(this.element.offsetTop, maxCardTop(mount, this.element)))}px`;
 		};
 		window.addEventListener('resize', this.keepInView);
@@ -229,6 +234,9 @@ class FloatingCard {
 		this.element.remove();
 	}
 }
+
+// How much of a card stays visible under the next one when the stack has to overlap: its header.
+const CARD_HEADER_PEEK = 40;
 
 // The lowest top that keeps a card in view. The mount can be taller than the viewport.
 function maxCardTop(mount, card) {
@@ -247,8 +255,14 @@ function restackCards(mount) {
 		.filter((card) => !card.style.left)
 		.sort((a, b) => (Number(a.getAttribute('data-claude-ext-card')) || 0) - (Number(b.getAttribute('data-claude-ext-card')) || 0));
 	let top = minTop;
+	let prevTop = -Infinity;
 	cards.forEach((card, i) => {
-		card.style.top = `${Math.max(minTop, Math.min(top, maxCardTop(mount, card)))}px`;
+		// Pulled up to stay in view, but never over the previous card's header (its title and close
+		// button): if the stack is taller than the viewport, the lower end of a card may go off-screen
+		// instead, and closing any card makes room.
+		const cardTop = Math.max(minTop, prevTop + CARD_HEADER_PEEK, Math.min(top, maxCardTop(mount, card)));
+		card.style.top = `${cardTop}px`;
+		prevTop = cardTop;
 		// Paint in stack order too, so where cards overlap, each covers only the end of the one above.
 		card.style.zIndex = String(10000 + i);
 		top = card.offsetTop + card.offsetHeight + 10;
