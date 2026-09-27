@@ -247,10 +247,12 @@ function restackCards(mount) {
 		.filter((card) => !card.style.left)
 		.sort((a, b) => (Number(a.getAttribute('data-claude-ext-card')) || 0) - (Number(b.getAttribute('data-claude-ext-card')) || 0));
 	let top = minTop;
-	for (const card of cards) {
+	cards.forEach((card, i) => {
 		card.style.top = `${Math.max(minTop, Math.min(top, maxCardTop(mount, card)))}px`;
+		// Paint in stack order too, so where cards overlap, each covers only the end of the one above.
+		card.style.zIndex = String(10000 + i);
 		top = card.offsetTop + card.offsetHeight + 10;
-	}
+	});
 }
 
 // update_patchnotes.txt in the extension root (web-accessible): one highlight per non-empty line.
