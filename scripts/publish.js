@@ -58,9 +58,11 @@ async function request(url, options, what) {
 const version = process.argv[2];
 if (!/^\d+\.\d+\.\d+$/.test(version || '')) fail('Usage: node common/scripts/publish.js <X.Y.Z> [--only=chrome,firefox,github]');
 const onlyArg = process.argv.find((arg) => arg.startsWith('--only='));
-const steps = onlyArg ? onlyArg.slice('--only='.length).split(',') : STEPS;
-const unknown = steps.filter((s) => !STEPS.includes(s));
+const selected = onlyArg ? onlyArg.slice('--only='.length).split(',') : STEPS;
+const unknown = selected.filter((s) => !STEPS.includes(s));
 if (unknown.length) fail(`Unknown step(s) ${unknown.join(', ')}: use ${STEPS.join(', ')}.`);
+// Always in STEPS order, whatever --only says: GitHub goes public only after the stores.
+const steps = STEPS.filter((s) => selected.includes(s));
 const tag = `v${version}`;
 
 // Only the store steps need credentials and the add-on id: --only=github works without them.
