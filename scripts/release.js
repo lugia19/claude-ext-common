@@ -73,8 +73,15 @@ try {
 if (git('rev-parse', 'HEAD') !== git('rev-parse', 'origin/main')) fail('main isn\'t in sync with origin/main (pull or push first).');
 
 // A symbolic bump right after an unfinished release would bump again: finish that one instead.
-if (!/^\d/.test(bump) && git('log', '-1', '--format=%s') === `chore: release ${current}` && !ok('gh', ['release', 'view', `v${current}`])) {
-	fail(`HEAD is the unfinished release of ${current} (no GitHub release yet). To finish it:\n  node common/scripts/release.js ${current} "${title}"`);
+// (Unfinished = no release, or only a draft that an earlier run left partway.)
+if (!/^\d/.test(bump) && git('log', '-1', '--format=%s') === `chore: release ${current}`) {
+	let published = false;
+	try {
+		published = !JSON.parse(run('gh', ['release', 'view', `v${current}`, '--json', 'isDraft'])).isDraft;
+	} catch (e) { /* no release at all */ }
+	if (!published) {
+		fail(`HEAD is the unfinished release of ${current} (not published on GitHub yet). To finish it:\n  node common/scripts/release.js ${current} "${title}"`);
+	}
 }
 
 const dirty = git('status', '--porcelain').split('\n').filter(Boolean).map((line) => line.slice(3));
@@ -101,7 +108,18 @@ if (previousTag) {
 const notes = fs.readFileSync(NOTES, 'utf8').split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
 if (!notes.length) fail(`${NOTES} is empty.`);
 
-if (ok('gh', ['release', 'view', tag])) fail(`A GitHub release ${tag} already exists (delete it to redo it).`);const tagAt = (() => {
+// A draft for this tag is left by an earlier run that failed partway (gh creates the draft, then
+// uploads the zips separately): reuse it. A published one means this version is done.
+const existingRelease = (() => {
+	try {
+		return JSON.parse(run('gh', ['release', 'view', tag, '--json', 'isDraft']));
+	} catch (e) {
+		return null;
+	}
+})();
+if (existingRelease && !existingRelease.isDraft) fail(`GitHub release ${tag} is already published.`);
+
+const tagAt = (() => {
 	try {
 		return git('rev-parse', `${tag}^{commit}`);
 	} catch (e) {
@@ -162,12 +180,17 @@ const zips = TARGETS.map((target) => {
 const notesFile = path.join(os.tmpdir(), `release-notes-${tag}.md`);
 fs.writeFileSync(notesFile, notes.map((line) => `- ${line}`).join('\n') + '\n');
 try {
-	run('gh', ['release', 'create', tag, '--draft', '--verify-tag', '--title', title, '--notes-file', notesFile, ...zips]);
+	if (existingRelease) {
+		run('gh', ['release', 'edit', tag, '--title', title, '--notes-file', notesFile]);
+		run('gh', ['release', 'upload', tag, ...zips, '--clobber']);
+	} else {
+		run('gh', ['release', 'create', tag, '--draft', '--verify-tag', '--title', title, '--notes-file', notesFile, ...zips]);
+	}
 } catch (e) {
-	fail(`Creating the draft release failed: ${(e.stderr || e.message).trim()}\nResume with:\n  ${resume}`);
+	fail(`The draft release failed: ${(e.stderr || e.message).trim()}\nResume with:\n  ${resume}`);
 } finally {
 	fs.rmSync(notesFile, { force: true });
 }
 const url = run('gh', ['release', 'view', tag, '--json', 'url', '--jq', '.url']);
-step(`Draft release ${tag} "${title}" created: ${url}`);
+step(`Draft release ${tag} "${title}" ${existingRelease ? 'updated' : 'created'}: ${url}`);
 step(`Test the zips from it, then: node common/scripts/publish.js ${version}`);
