@@ -16,7 +16,7 @@ module.exports = baseConfig({
 				'claude/page.js',
 				'net/bard-schema.js',
 				'net/net.js',
-				'ext/bridge.js',
+				'ext/bridge-isolated.js',
 				'ui/components.js',
 				'ui/cards.js',
 			],
