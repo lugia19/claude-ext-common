@@ -9,8 +9,9 @@
 // ClaudeExtBridge.serve() answers, forwarding background messages only if their type is
 // allow-listed there.
 //
-// Two files rather than one that detects its world: Chrome injects a file only once per page, even
-// when it's listed for both worlds.
+// Two files rather than one that detects its world: Chrome injects a given file only once per page
+// and run_at, across worlds. Both halves load at document_start, so one shared file would only reach
+// one of them (it silently skipped MAIN).
 //
 // Both extensions load this into the shared MAIN world, so like net.js it's an IIFE publishing one
 // versioned namespace: the NEWEST copy wins whatever the load order, and callers look members up at
