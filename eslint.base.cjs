@@ -36,13 +36,30 @@ const espree = require('espree');
 
 const posix = (p) => p.split(path.sep).join('/');
 
-// content_scripts entries of a manifest, one group each: { name, files } with repo-relative paths.
+// A manifest's content scripts as groups: { name, files } with repo-relative paths. Entries in the same
+// world that inject into exactly the same contexts (every matching/frame option equal) run in one scope
+// whatever their run_at (an extension has one ISOLATED world per frame), so they form one group; any
+// other difference means one can run where the other doesn't.
+// The options that decide where an entry injects, normalized so equivalent spellings compare equal
+// (omitted booleans are false, pattern lists are order-insensitive).
+const CONTEXT_LISTS = ['matches', 'exclude_matches', 'include_globs', 'exclude_globs'];
+const CONTEXT_FLAGS = ['all_frames', 'match_about_blank', 'match_origin_as_fallback'];
+const contextKey = (world, cs) => JSON.stringify([
+	world,
+	...CONTEXT_LISTS.map(k => [...(cs[k] ?? [])].sort()),
+	...CONTEXT_FLAGS.map(k => cs[k] === true),
+]);
+
 function manifestGroups(root, manifestFile) {
 	const manifest = JSON.parse(fs.readFileSync(path.join(root, manifestFile), 'utf8'));
-	return (manifest.content_scripts ?? []).map((cs, i) => ({
-		name: `${manifestFile} content_scripts[${i}] (${cs.world ?? 'ISOLATED'})`,
-		files: cs.js ?? [],
-	}));
+	const groups = new Map();
+	for (const cs of manifest.content_scripts ?? []) {
+		const world = cs.world ?? 'ISOLATED';
+		const key = contextKey(world, cs);
+		if (!groups.has(key)) groups.set(key, { name: `${manifestFile} content_scripts (${world}) ${(cs.matches ?? []).join(' ')}`, files: [] });
+		groups.get(key).files.push(...(cs.js ?? []));
+	}
+	return [...groups.values()];
 }
 
 // Extension pages: the local <script src> files of each HTML file, one group per page.
