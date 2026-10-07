@@ -103,8 +103,9 @@ side-effect `import`.
 ## Linting
 
 `eslint.base.cjs` is the one ESLint flat config for this repo and both extensions. Each repo's
-`eslint.config.js` calls `baseConfig({ root, groups, libGlobals, modules, node, ignores })` with what's
-its own (see the file's header). The rules: `@eslint/js` recommended, `no-undef`, and `no-unused-vars`
+`eslint.config.js` calls `baseConfig({ root, groups, libGlobals, modules, serviceWorker, ignores })` with
+what's its own (see the file's header). Only extension code is linted: dev tooling (`scripts/`, `*.mjs`,
+`*.cjs`, the configs) is left out. The rules: `@eslint/js` recommended, `no-undef`, and `no-unused-vars`
 ignoring arguments, catch bindings and rest siblings, and, in plain scripts, top-level names (those
 are shared with other files).
 

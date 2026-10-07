@@ -20,6 +20,9 @@
 // only one world has is an error. Load order isn't enforced: a function may call something a later
 // file defines. Minified libraries aren't parsed; name their globals in libGlobals.
 //
+// Only extension code is linted. Dev tooling (scripts/, *.mjs, *.cjs, the ESLint configs) is
+// ignored: it runs under Node, needs a different set of globals, and only has to run.
+//
 // Resolves @eslint/js, globals and espree from the repo that runs ESLint (an extension's
 // node_modules when this is its common/ submodule).
 'use strict';
@@ -130,46 +133,43 @@ const unusedVars = (vars) => ['error', { vars, args: 'none', caughtErrors: 'none
 //   groups      [{ name, files }] script groups, from manifestGroups / htmlGroups / by hand
 //   libGlobals  { 'lib/x.min.js': ['X'] } globals of files that aren't parsed
 //   modules     globs of ES-module browser files (sourceType module)
-//   node        globs of Node scripts, CommonJS ('.js', '.cjs'); '.mjs' anywhere is an ES module
-//   serviceWorker  globs of classic service-worker scripts (importScripts and friends)
+//   serviceWorker  globs of service-worker scripts: WebExtension and service-worker globals
+//               (importScripts...), but not window/document
 //   ignores     extra global ignores
-function baseConfig({ root, groups = [], libGlobals = {}, modules = [], node = [], serviceWorker = [], ignores = [] }) {
+function baseConfig({ root, groups = [], libGlobals = {}, modules = [], serviceWorker = [], ignores = [] }) {
 	const perFile = groupGlobals(root, groups, libGlobals);
 	const config = [
-		{ ignores: ['**/node_modules/**', 'debug/**', 'web-ext-artifacts/**', '**/*.min.js', ...ignores] },
+		{
+			ignores: [
+				'**/node_modules/**', 'debug/**', 'web-ext-artifacts/**', '**/*.min.js',
+				'scripts/**', '**/*.mjs', '**/*.cjs', 'eslint.config.*', ...ignores,
+			],
+		},
 		js.configs.recommended,
 		{
-			files: ['**/*.js', '**/*.cjs', '**/*.mjs'],
-			languageOptions: {
-				ecmaVersion: 'latest',
-				sourceType: 'script',
-				globals: { ...globals.browser, ...globals.webextensions },
-			},
+			files: ['**/*.js'],
+			languageOptions: { ecmaVersion: 'latest', sourceType: 'script' },
 			rules: {
 				'no-undef': 'error',
 				// Scripts share their top-level names with the rest of their group, so only locals count.
 				'no-unused-vars': unusedVars('local'),
 			},
 		},
+		// Globals merge across matching entries, so a service worker must not match the browser one.
+		{
+			files: ['**/*.js'],
+			ignores: serviceWorker,
+			languageOptions: { globals: { ...globals.browser, ...globals.webextensions } },
+		},
 		...(serviceWorker.length ? [{
 			files: serviceWorker,
-			languageOptions: { globals: { ...globals.serviceworker } },
+			languageOptions: { globals: { ...globals.serviceworker, ...globals.webextensions } },
 		}] : []),
 		...(modules.length ? [{
 			files: modules,
 			languageOptions: { sourceType: 'module' },
 			rules: { 'no-unused-vars': unusedVars('all') },
 		}] : []),
-		{
-			files: [...node, '**/*.cjs', 'eslint.config.js'],
-			languageOptions: { sourceType: 'commonjs', globals: { ...globals.node } },
-			rules: { 'no-unused-vars': unusedVars('all') },
-		},
-		{
-			files: ['**/*.mjs'],
-			languageOptions: { sourceType: 'module', globals: { ...globals.node } },
-			rules: { 'no-unused-vars': unusedVars('all') },
-		},
 	];
 	for (const [file, names] of perFile) {
 		if (!names.size) continue;

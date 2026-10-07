@@ -22,6 +22,4 @@ module.exports = baseConfig({
 		},
 		...htmlGroups(__dirname, ['log/viewer.html']),
 	],
-	node: ['scripts/*.js'],
-	ignores: ['scripts/bard/captures/**', 'scripts/bard/proto/**'],
 });
