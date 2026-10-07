@@ -1,0 +1,633 @@
+syntax = "proto3";
+
+package anthropic.bard.api.v1alpha;
+
+import "anthropic/bard/api/v1alpha/archive_conversation.proto";
+import "anthropic/bard/api/v1alpha/cancel_reason.proto";
+import "anthropic/bard/api/v1alpha/continue_branch.proto";
+import "anthropic/bard/api/v1alpha/conversation.proto";
+import "anthropic/bard/api/v1alpha/conversation_list.proto";
+import "anthropic/bard/api/v1alpha/conversation_members.proto";
+import "anthropic/bard/api/v1alpha/conversation_memberships.proto";
+import "anthropic/bard/api/v1alpha/corbel_display.proto";
+import "anthropic/bard/api/v1alpha/device_binding.proto";
+import "anthropic/bard/api/v1alpha/elicitation.proto";
+import "anthropic/bard/api/v1alpha/external_reply.proto";
+import "anthropic/bard/api/v1alpha/routine_run_grants.proto";
+import "anthropic/bard/api/v1alpha/send_preparation.proto";
+import "anthropic/bard/api/v1alpha/session_start_selection.proto";
+import "anthropic/bard/api/v1alpha/stop_generation_intent.proto";
+import "anthropic/bard/api/v1alpha/streaming.proto";
+import "anthropic/bard/api/v1alpha/workspace_panel_display.proto";
+import "google/protobuf/any.proto";
+import "google/protobuf/duration.proto";
+
+enum ComputerLinkAdmission {
+  COMPUTER_LINK_ADMISSION_UNSPECIFIED = 0;
+  COMPUTER_LINK_ADMISSION_ADMITTED = 1;
+  COMPUTER_LINK_ADMISSION_NOT_OFFERED = 2;
+  COMPUTER_LINK_ADMISSION_DEVICE_UNVERIFIED = 3;
+  COMPUTER_LINK_ADMISSION_REAUTH_REQUIRED = 4;
+}
+
+enum GuardVerdict {
+  GUARD_VERDICT_UNSPECIFIED = 0;
+  GUARD_VERDICT_CLEAN = 1;
+  GUARD_VERDICT_FELL_OPEN = 2;
+  GUARD_VERDICT_DELETED = 3;
+}
+
+enum ConversationSource {
+  CONVERSATION_SOURCE_UNSPECIFIED = 0;
+  CONVERSATION_SOURCE_AGENT_API = 1;
+  CONVERSATION_SOURCE_PRIVATE_API = 2;
+  CONVERSATION_SOURCE_MESSAGES = 3;
+}
+
+enum WorkspaceUpgradeLane {
+  WORKSPACE_UPGRADE_LANE_UNSPECIFIED = 0;
+  WORKSPACE_UPGRADE_LANE_COWORK_REMOTE = 1;
+}
+
+enum WorkModeOverride {
+  WORK_MODE_OVERRIDE_UNSPECIFIED = 0;
+  WORK_MODE_OVERRIDE_CHAT = 1;
+  WORK_MODE_OVERRIDE_WORKSPACE_PROXY = 2;
+  WORK_MODE_OVERRIDE_TOOL_FAULT_PROXY = 3;
+}
+
+enum ChatClientPlatform {
+  CHAT_CLIENT_PLATFORM_UNSPECIFIED = 0;
+  CHAT_CLIENT_PLATFORM_WEB_CLAUDE_AI = 1;
+  CHAT_CLIENT_PLATFORM_DESKTOP_APP = 2;
+  CHAT_CLIENT_PLATFORM_IOS = 3;
+  CHAT_CLIENT_PLATFORM_ANDROID = 4;
+}
+
+enum ClientMcpServerKind {
+  CLIENT_MCP_SERVER_KIND_UNSPECIFIED = 0;
+  CLIENT_MCP_SERVER_KIND_LOCAL = 1;
+  CLIENT_MCP_SERVER_KIND_PLUGIN = 2;
+  CLIENT_MCP_SERVER_KIND_DIRECT = 3;
+}
+
+message ReadCoworkSessionRequest {
+  string session_id = 1;
+  optional string cursor = 2;
+  optional int32 limit = 3;
+  optional bool meta_only = 4;
+}
+
+message ReadCoworkSessionResponse {
+  enum SessionKind {
+    SESSION_KIND_UNSPECIFIED = 0;
+    SESSION_KIND_COWORK_REMOTE = 1;
+    SESSION_KIND_OTHER = 2;
+  }
+  anthropic.bard.api.v1alpha.ConversationUpdate update = 1;
+  optional string older_cursor = 2;
+  anthropic.bard.api.v1alpha.CoworkSessionMeta meta = 3;
+  anthropic.bard.api.v1alpha.CoworkContinuationInfo continuation = 4;
+  anthropic.bard.api.v1alpha.ReadCoworkSessionResponse.SessionKind session_kind = 5;
+}
+
+message CoworkContinuationInfo {
+  string conversation_id = 1;
+  bool already_continued = 2;
+}
+
+message CoworkSessionMeta {
+  enum CoworkSessionStatus {
+    COWORK_SESSION_STATUS_UNSPECIFIED = 0;
+    COWORK_SESSION_STATUS_ACTIVE = 1;
+    COWORK_SESSION_STATUS_ARCHIVED = 2;
+    COWORK_SESSION_STATUS_PAUSED = 3;
+    COWORK_SESSION_STATUS_FAILED = 4;
+  }
+  message SessionArtifact {
+    enum Source {
+      SOURCE_UNSPECIFIED = 0;
+      SOURCE_STARTED_WITH = 1;
+      SOURCE_TAGGED = 2;
+    }
+    string artifact_id = 1;
+    optional string type_id = 2;
+    optional string title = 3;
+    anthropic.bard.api.v1alpha.CoworkSessionMeta.SessionArtifact.Source source = 4;
+  }
+  anthropic.bard.api.v1alpha.CoworkSessionMeta.CoworkSessionStatus session_status = 2;
+  repeated anthropic.bard.api.v1alpha.CoworkSessionMeta.SessionArtifact artifacts = 3;
+  repeated string repository_names = 4;
+  string runner_pool_name = 5;
+}
+
+message ReadConversationHistoryRequest {
+  string conversation_id = 1;
+  string cursor = 2;
+  optional int32 limit = 3;
+  anthropic.bard.api.v1alpha.CorbelEarlierChatRequest corbel_earlier_chat = 4;
+  optional string artifact_version_uuid = 5;
+  anthropic.bard.api.v1alpha.ClientCapabilities client_capabilities = 6;
+}
+
+message ReadConversationHistoryResponse {
+  enum Outcome {
+    OUTCOME_UNSPECIFIED = 0;
+    OUTCOME_PAGE = 1;
+    OUTCOME_STALE_VIEW = 2;
+    OUTCOME_TARGET_BELOW = 3;
+    OUTCOME_TARGET_NOT_FOUND = 4;
+  }
+  anthropic.bard.api.v1alpha.ConversationUpdate update = 1;
+  optional string older_cursor = 2;
+  anthropic.bard.api.v1alpha.ReadConversationHistoryResponse.Outcome outcome = 3;
+  anthropic.bard.api.v1alpha.CorbelEarlierChatPage corbel_earlier_chat = 4;
+}
+
+message ReadConversationRequest {
+  string conversation_id = 1;
+  optional int64 known_revision_ns = 4;
+  optional int64 max_response_bytes = 3;
+  string display_language = 5;
+}
+
+message ReadConversationResponse {
+  enum Outcome {
+    OUTCOME_UNSPECIFIED = 0;
+    OUTCOME_SERVED = 1;
+    OUTCOME_NOT_MODIFIED = 2;
+  }
+  anthropic.bard.api.v1alpha.ReadConversationResponse.Outcome outcome = 1;
+  anthropic.bard.api.v1alpha.ConversationUpdate update = 2;
+}
+
+message GetNewConversationDefaultsRequest {
+}
+
+message GetNewConversationDefaultsResponse {
+  anthropic.bard.api.v1alpha.NewConversationDefaults regular = 1;
+  anthropic.bard.api.v1alpha.NewConversationDefaults temporary = 2;
+  anthropic.bard.api.v1alpha.ComputerLinkAdmission computer_link_admission = 3;
+  optional bool previous_version_choice_offered = 5;
+}
+
+message StreamTimelineRequest {
+  string conversation_id = 1;
+  optional anthropic.bard.api.v1alpha.Version version = 2;
+  bool outcome_acks = 3;
+  anthropic.bard.api.v1alpha.ClientCapabilities client_capabilities = 4;
+  string display_language = 5;
+  bool existing_only = 6;
+  bool conversation_statement = 7;
+}
+
+message StreamTimelineResponse {
+  anthropic.bard.api.v1alpha.StreamEvent event = 1;
+}
+
+message ReportViewingRequest {
+  string conversation_id = 1;
+  string client_id = 2;
+  bool clear = 3;
+}
+
+message ReportViewingResponse {
+  int32 refresh_after_seconds = 1;
+}
+
+message ActionHeader {
+  anthropic.bard.api.v1alpha.MutationId mutation_id = 1;
+  string conversation_id = 2;
+  anthropic.bard.api.v1alpha.ConversationSource source = 3;
+  string scope = 4;
+  string device_token_fingerprint = 5;
+  repeated anthropic.bard.api.v1alpha.ForwardedClientHeader forwarded_client_headers = 6;
+  anthropic.bard.api.v1alpha.ClientCapabilities client_capabilities = 7;
+  anthropic.bard.api.v1alpha.ActorSnapshot actor_snapshot = 8;
+  string relay_id = 9;
+  anthropic.bard.api.v1alpha.GuardVerdict guard_verdict = 10;
+  int64 guard_verdict_observed_at_ms = 11;
+  string guard_liveness_uuid = 12;
+  string actor_account_uuid = 13;
+  string display_language = 14;
+  bytes origin_nonce = 15;
+  string composed_publish_path = 16;
+  anthropic.bard.api.v1alpha.DeviceSigning device_signing = 17;
+  bool in_person = 18;
+}
+
+message DeviceSigning {
+  message SignedItem {
+    anthropic.bard.api.v1alpha.WorkspaceDeviceSignatureAsk.Item item = 1;
+    string kid = 2;
+    bytes signature = 3;
+  }
+  repeated anthropic.bard.api.v1alpha.DeviceSigning.SignedItem signed_items = 1;
+}
+
+message DeviceSignatureAsk {
+  string session_id = 1;
+  repeated anthropic.bard.api.v1alpha.WorkspaceDeviceSignatureAsk.Item items = 2;
+}
+
+message ClientCapabilities {
+  bool device_step_up_card = 1;
+  bool session_step_up_card = 2;
+  bool mcp_auth_card = 3;
+  bool credential_refresh_card = 4;
+  bool partial_baseline = 5;
+  bool renders_inline_comparison = 6;
+  bool deals_inline_comparison = 7;
+  bool keeps_inline_comparison_on_tool_use = 8;
+  bool corbel_surfaces = 9;
+  bool mcp_elicitation_card = 10;
+  bool renders_agent_post_files = 11;
+  bool renders_thinking_token_estimate = 12;
+  bool windowed_agent_timeline = 16;
+  bool renders_late_send_failure = 17;
+}
+
+message ForwardedClientHeader {
+  string name = 1;
+  string value = 2;
+}
+
+message ActorSnapshot {
+  string client_ip = 1;
+  string user_agent = 2;
+  string device_id = 3;
+  string client_platform = 4;
+}
+
+message PerformActionRequest {
+  anthropic.bard.api.v1alpha.ActionHeader header = 1;
+  bool routine_run_required = 100;
+  oneof action {
+    anthropic.bard.api.v1alpha.SendMessage send_message = 2;
+    anthropic.bard.api.v1alpha.StopGeneration stop_generation = 3;
+    anthropic.bard.api.v1alpha.RespondToElicitation respond_to_elicitation = 4;
+    anthropic.bard.api.v1alpha.MessageFeedback message_feedback = 5;
+    anthropic.bard.api.v1alpha.RenameConversation rename_conversation = 6;
+    anthropic.bard.api.v1alpha.UpdateConversationSettings update_conversation_settings = 9;
+    anthropic.bard.api.v1alpha.StarConversation star_conversation = 10;
+    anthropic.bard.api.v1alpha.SubmitClientToolResult submit_client_tool_result = 11;
+    anthropic.bard.api.v1alpha.RefreshConversation refresh_conversation = 12;
+    anthropic.bard.api.v1alpha.WorkspaceUpgrade workspace_upgrade = 13;
+    anthropic.bard.api.v1alpha.StopResearchTask stop_research_task = 14;
+    anthropic.bard.api.v1alpha.WarmTurn warm_turn = 15;
+    anthropic.bard.api.v1alpha.BrowserAttachAcquire browser_attach_acquire = 16;
+    anthropic.bard.api.v1alpha.BrowserAttachRelease browser_attach_release = 17;
+    anthropic.bard.api.v1alpha.BrowserAttachTakeover browser_attach_takeover = 18;
+    anthropic.bard.api.v1alpha.PublishFile publish_file = 19;
+    anthropic.bard.api.v1alpha.ReloadSkills reload_skills = 20;
+    anthropic.bard.api.v1alpha.ProvideDeviceSignatures provide_device_signatures = 21;
+    anthropic.bard.api.v1alpha.ExternalReplyProgress external_reply_progress = 22;
+    anthropic.bard.api.v1alpha.SetCurrentLeaf set_current_leaf = 23;
+    anthropic.bard.api.v1alpha.AttuneStart attune_start = 24;
+    anthropic.bard.api.v1alpha.AttuneEnd attune_end = 25;
+    anthropic.bard.api.v1alpha.SetConversationModel set_conversation_model = 27;
+    anthropic.bard.api.v1alpha.BindDevice bind_device = 26;
+    anthropic.bard.api.v1alpha.AbandonInlineComparison abandon_inline_comparison = 28;
+    anthropic.bard.api.v1alpha.RefreshReadState refresh_read_state = 31;
+    anthropic.bard.api.v1alpha.InvokeBlockAction invoke_block_action = 29;
+    anthropic.bard.api.v1alpha.FreshContactHeal fresh_contact_heal = 32;
+    anthropic.bard.api.v1alpha.SeedCoworkContinuation seed_cowork_continuation = 33;
+    anthropic.bard.api.v1alpha.ReportFolderAccess report_folder_access = 34;
+    anthropic.bard.api.v1alpha.CorbelSetReaction corbel_set_reaction = 35;
+    anthropic.bard.api.v1alpha.CorbelEditMessage corbel_edit_message = 36;
+    anthropic.bard.api.v1alpha.ContinueBranchAsNewChat continue_branch_as_new_chat = 37;
+    anthropic.bard.api.v1alpha.CorbelBeginFirstRun corbel_begin_first_run = 38;
+    anthropic.bard.api.v1alpha.CorbelReportConnectorsChanged corbel_report_connectors_changed = 39;
+    anthropic.bard.api.v1alpha.CorbelResolveSkillProposal corbel_resolve_skill_proposal = 40;
+    anthropic.bard.api.v1alpha.ArchiveConversation archive_conversation = 41;
+    anthropic.bard.api.v1alpha.CorbelOpenAgent corbel_open_agent = 42;
+    anthropic.bard.api.v1alpha.AddMember add_member = 43;
+    anthropic.bard.api.v1alpha.RemoveMember remove_member = 44;
+    anthropic.bard.api.v1alpha.LeaveConversation leave_conversation = 45;
+    anthropic.bard.api.v1alpha.SendMessageAsMember send_message_as_member = 46;
+  }
+}
+
+message PerformActionResponse {
+  optional anthropic.bard.api.v1alpha.MutationAck ack = 1;
+  anthropic.bard.api.v1alpha.DeviceSignatureAsk device_signature_ask = 2;
+  anthropic.bard.api.v1alpha.DeviceSigningFeedback device_signing_feedback = 3;
+  anthropic.bard.api.v1alpha.CorbelUserEdit corbel_edit_accepted = 4;
+  optional anthropic.bard.api.v1alpha.CorbelOpenAgentResult corbel_open_agent_result = 5;
+}
+
+message DeviceSigningFeedback {
+  bool kid_not_found = 1;
+}
+
+message InvokeBlockAction {
+  string content_block_id = 1;
+  string action_id = 2;
+}
+
+message ReloadSkills {
+}
+
+message WorkspaceUpgrade {
+  enum Trigger {
+    TRIGGER_UNSPECIFIED = 0;
+    TRIGGER_OPEN_WORKSPACE = 1;
+    TRIGGER_INTERCEPTED_TOOL = 2;
+    TRIGGER_FULL_PROXY_SEND = 3;
+    TRIGGER_DEVICE_ELECTION = 4;
+    TRIGGER_COWORK_CONTINUATION = 5;
+    TRIGGER_ATTACHMENT = 6;
+    TRIGGER_MEDIA_LIMIT = 8;
+    TRIGGER_ARTIFACT_START = 10;
+    TRIGGER_CCS_FIRST_SEND = 11;
+    TRIGGER_CCS_EXISTING_CHAT = 12;
+  }
+  string reason = 1;
+  string expected_work = 2;
+  string intercepted_tool = 3;
+  anthropic.bard.api.v1alpha.WorkspaceUpgrade.Trigger trigger = 4;
+  anthropic.bard.api.v1alpha.WorkspaceUpgradeLane lane = 5;
+  string pre_rented_session_id = 6;
+  int64 requested_at_unix_ms = 7;
+  string target_device_id = 8;
+  string security_tier = 9;
+  anthropic.bard.api.v1alpha.ChatClientPlatform client_platform = 10;
+  string starling_prompt_branch = 11;
+  bool viz_attach = 12;
+  string continue_cowork_session_id = 13;
+  int32 continuation_generation = 14;
+  bool wd_attach = 15;
+  bool agents_attach = 16;
+  string park_bound_device_id = 18;
+  string link_before_kickoff_device_id = 19;
+  anthropic.bard.api.v1alpha.SessionStartSelection session_start_selection = 20;
+  int64 first_send_post_tried_at_ms = 21;
+}
+
+message SeedCoworkContinuation {
+  string continue_cowork_session_id = 1;
+  int32 continuation_generation = 2;
+}
+
+message ReportFolderAccess {
+  string device_id = 1;
+  repeated anthropic.bard.api.v1alpha.AttachedFolder folders = 2;
+  int64 generation = 3;
+}
+
+message StopResearchTask {
+  string task_id = 1;
+}
+
+message BrowserAttachAcquire {
+  string holder_token = 1;
+  int64 persisted_stream_cursor = 2;
+  bool is_reattach = 3;
+}
+
+message BrowserAttachRelease {
+  string holder_token = 1;
+  int64 lease_epoch = 2;
+}
+
+message BrowserAttachTakeover {
+  string holder_token = 1;
+  int64 observed_lease_epoch = 2;
+}
+
+message AttuneStart {
+  string mode = 1;
+  google.protobuf.Any server_scenario_card = 2;
+}
+
+message AttuneEnd {
+  string attune_session_id = 1;
+}
+
+message SendMessage {
+  string message_id = 1;
+  string assistant_message_id = 2;
+  string text = 3;
+  repeated anthropic.bard.api.v1alpha.Attachment attachments = 4;
+  optional string parent_message_id = 5;
+  anthropic.bard.api.v1alpha.InputMode input_mode = 6;
+  anthropic.bard.api.v1alpha.ModelId model = 7;
+  anthropic.bard.api.v1alpha.UpdateConversationSettings settings_update = 8;
+  optional string project_id = 9;
+  bool is_temporary = 10;
+  anthropic.bard.api.v1alpha.WorkModeOverride work_mode_override = 11;
+  string timezone = 12;
+  string locale = 13;
+  bool answer_now = 14;
+  repeated anthropic.bard.api.v1alpha.InlineAttachment inline_attachments = 15;
+  repeated anthropic.bard.api.v1alpha.ClientToolDeclaration client_tools = 16;
+  anthropic.bard.api.v1alpha.ChatClientPlatform client_platform = 18;
+  optional string target_device_id = 19;
+  string eval_params_json = 20;
+  anthropic.bard.api.v1alpha.ChatMemoryMode chat_memory_mode = 21;
+  optional string continue_cowork_session_id = 22;
+  repeated string hidden_context = 23;
+  repeated anthropic.bard.api.v1alpha.AttachedFolder attached_folders = 24;
+  optional anthropic.bard.api.v1alpha.LocalProject local_project = 25;
+  anthropic.bard.api.v1alpha.RoutineRun routine_run = 26;
+  anthropic.bard.api.v1alpha.SafetyControls safety_controls = 27;
+  anthropic.bard.api.v1alpha.CorbelConversationInit corbel = 28;
+  anthropic.bard.api.v1alpha.CorbelSend corbel_send = 29;
+  anthropic.bard.api.v1alpha.CorbelRelay corbel_relay = 30;
+  bool no_target_device = 32;
+  anthropic.bard.api.v1alpha.CorbelCardPress corbel_card_press = 33;
+  bool folder_instructions_follow = 34;
+  anthropic.bard.api.v1alpha.BindDevice creation_bind = 35;
+  optional string started_as_artifact_type_id = 36;
+  anthropic.bard.api.v1alpha.BindDevice session_start_bind = 37;
+  optional anthropic.bard.api.v1alpha.PermissionMode shown_permission_mode = 38;
+}
+
+message RoutineRun {
+  string trigger_id = 1;
+  string name = 2;
+  string fire_id = 3;
+  anthropic.bard.api.v1alpha.RoutineFireReason fire_reason = 4;
+  anthropic.bard.api.v1alpha.RoutineRunGrants grants = 5;
+  bool judged_egress = 6;
+}
+
+message ClientToolDeclaration {
+  string name = 1;
+  optional string description = 2;
+  string input_schema_json = 3;
+  optional string title = 4;
+  optional string mcp_server_name = 5;
+  anthropic.bard.api.v1alpha.ClientMcpServerKind mcp_server_kind = 6;
+  optional string mcp_tool_name = 7;
+  optional string mcp_tool_approval_hash = 8;
+  optional string mcp_server_title = 9;
+}
+
+message StopGeneration {
+  optional string stopping_message_id = 1;
+  optional anthropic.bard.api.v1alpha.StopGenerationIntent intent = 2;
+}
+
+message WarmTurn {
+  anthropic.bard.api.v1alpha.SendMessage intended_send = 1;
+}
+
+message RefreshConversation {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    KIND_STORE_WRITE = 1;
+    KIND_SESSION_ACTIVITY = 2;
+  }
+  anthropic.bard.api.v1alpha.RefreshConversation.Kind kind = 1;
+}
+
+message AbandonInlineComparison {
+  string inline_comparison_id = 1;
+}
+
+message RefreshReadState {
+  enum Marked {
+    MARKED_UNSPECIFIED = 0;
+    MARKED_READ = 1;
+    MARKED_UNREAD = 2;
+  }
+  anthropic.bard.api.v1alpha.RefreshReadState.Marked marked = 1;
+}
+
+message FreshContactHeal {
+  int64 login_fresh_at_unix = 1;
+  string contact_key_digest = 2;
+  string judged_episode_id = 3;
+}
+
+message RespondToElicitation {
+  string elicitation_id = 1;
+  anthropic.bard.api.v1alpha.ElicitationResponse response = 2;
+  string ask_nonce = 3;
+}
+
+message ProvideDeviceSignatures {
+  enum DeclineReason {
+    DECLINE_REASON_UNSPECIFIED = 0;
+    DECLINE_REASON_NOT_BOUND_HERE = 1;
+    DECLINE_REASON_NO_SIGNER = 2;
+    DECLINE_REASON_TIMEOUT = 3;
+    DECLINE_REASON_REFUSED = 4;
+  }
+  message EventSignature {
+    string event_uuid = 1;
+    string kid = 2;
+    bytes signature = 3;
+  }
+  message FileCopySignature {
+    string file_id = 1;
+    string mount_path = 2;
+    string kid = 3;
+    bytes signature = 4;
+    int64 issued_at_ms = 5;
+  }
+  message Signed {
+    repeated anthropic.bard.api.v1alpha.ProvideDeviceSignatures.EventSignature signatures = 1;
+    repeated anthropic.bard.api.v1alpha.ProvideDeviceSignatures.FileCopySignature file_copy_signatures = 2;
+  }
+  message Declined {
+    anthropic.bard.api.v1alpha.ProvideDeviceSignatures.DeclineReason reason = 1;
+  }
+  string ask_id = 1;
+  string ask_nonce = 2;
+  bytes origin_nonce = 5;
+  oneof outcome {
+    anthropic.bard.api.v1alpha.ProvideDeviceSignatures.Signed signed = 3;
+    anthropic.bard.api.v1alpha.ProvideDeviceSignatures.Declined declined = 4;
+  }
+}
+
+message MessageFeedback {
+  string message_id = 1;
+  anthropic.bard.api.v1alpha.FeedbackType type = 2;
+  optional string comment = 3;
+}
+
+message RenameConversation {
+  string title = 1;
+}
+
+message UpdateConversationSettings {
+  anthropic.bard.api.v1alpha.ConversationSettings settings = 1;
+  anthropic.bard.api.v1alpha.SafetyControls safety_controls = 2;
+}
+
+message StarConversation {
+  bool starred = 1;
+}
+
+message SetCurrentLeaf {
+  string current_leaf_message_id = 1;
+}
+
+message SetConversationModel {
+  anthropic.bard.api.v1alpha.ModelId model = 1;
+}
+
+message SubmitClientToolResult {
+  string tool_use_id = 1;
+  string result_json = 2;
+  bool is_error = 3;
+  anthropic.bard.api.v1alpha.CancelReason cancel_reason = 4;
+}
+
+message PublishFile {
+  message SandboxFile {
+    string path = 1;
+  }
+  message DeliveredFile {
+    string attachment_id = 1;
+    string session_path = 2;
+  }
+  string message_id = 1;
+  string assistant_message_id = 2;
+  optional string parent_message_id = 3;
+  anthropic.bard.api.v1alpha.ModelId model = 4;
+  string timezone = 5;
+  string locale = 6;
+  anthropic.bard.api.v1alpha.ChatClientPlatform client_platform = 7;
+  anthropic.bard.api.v1alpha.UpdateConversationSettings settings_update = 8;
+  oneof file {
+    anthropic.bard.api.v1alpha.PublishFile.SandboxFile sandbox_file = 9;
+    anthropic.bard.api.v1alpha.PublishFile.DeliveredFile delivered_file = 10;
+  }
+}
+
+message SafetyControls {
+  map<string, bool> controls = 1;
+}
+
+message SendAndSettleRequest {
+  anthropic.bard.api.v1alpha.ActionHeader header = 1;
+  optional anthropic.bard.api.v1alpha.SendMessage send_message = 2;
+  optional anthropic.bard.api.v1alpha.Version since_version = 3;
+  optional google.protobuf.Duration max_wait = 4;
+}
+
+message SendAndSettleResponse {
+  anthropic.bard.api.v1alpha.ConversationUpdate update = 1;
+  anthropic.bard.api.v1alpha.Version version = 2;
+  bool settled = 3;
+  optional anthropic.bard.api.v1alpha.MutationAck ack = 4;
+}
+
+service ConversationService {
+  rpc StreamTimeline(anthropic.bard.api.v1alpha.StreamTimelineRequest) returns (stream anthropic.bard.api.v1alpha.StreamTimelineResponse);
+  rpc PerformAction(anthropic.bard.api.v1alpha.PerformActionRequest) returns (anthropic.bard.api.v1alpha.PerformActionResponse);
+  rpc ReadCoworkSession(anthropic.bard.api.v1alpha.ReadCoworkSessionRequest) returns (anthropic.bard.api.v1alpha.ReadCoworkSessionResponse);
+  rpc ReadConversationHistory(anthropic.bard.api.v1alpha.ReadConversationHistoryRequest) returns (anthropic.bard.api.v1alpha.ReadConversationHistoryResponse);
+  rpc ReadConversation(anthropic.bard.api.v1alpha.ReadConversationRequest) returns (anthropic.bard.api.v1alpha.ReadConversationResponse);
+  rpc StreamConversationList(anthropic.bard.api.v1alpha.StreamConversationListRequest) returns (stream anthropic.bard.api.v1alpha.StreamConversationListResponse);
+  rpc ListConversations(anthropic.bard.api.v1alpha.ListConversationsRequest) returns (anthropic.bard.api.v1alpha.ListConversationsResponse);
+  rpc GetNewConversationDefaults(anthropic.bard.api.v1alpha.GetNewConversationDefaultsRequest) returns (anthropic.bard.api.v1alpha.GetNewConversationDefaultsResponse);
+  rpc ReportViewing(anthropic.bard.api.v1alpha.ReportViewingRequest) returns (anthropic.bard.api.v1alpha.ReportViewingResponse);
+  rpc PrepareSend(anthropic.bard.api.v1alpha.PrepareSendRequest) returns (anthropic.bard.api.v1alpha.PrepareSendResponse);
+  rpc SendAndSettle(anthropic.bard.api.v1alpha.SendAndSettleRequest) returns (anthropic.bard.api.v1alpha.SendAndSettleResponse);
+  rpc ListConversationMemberships(anthropic.bard.api.v1alpha.ListConversationMembershipsRequest) returns (anthropic.bard.api.v1alpha.ListConversationMembershipsResponse);
+}

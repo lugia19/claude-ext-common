@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package anthropic.bard.api.v1alpha;
+
+message SessionStartSelection {
+  string model = 1;
+  string stored_model = 2;
+  string effort_level = 3;
+  bool lasting = 7;
+  oneof requested_effort {
+    string requested_effort_level = 4;
+    int32 requested_effort_value = 5;
+    bool requested_default_effort = 6;
+  }
+}

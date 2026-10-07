@@ -1,0 +1,286 @@
+syntax = "proto3";
+
+package anthropic.bard.api.v1alpha;
+
+import "anthropic/bard/api/v1alpha/actor.proto";
+import "anthropic/bard/api/v1alpha/content.proto";
+import "anthropic/bard/api/v1alpha/display_table.proto";
+import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";
+
+enum FormFieldType {
+  FORM_FIELD_TYPE_UNSPECIFIED = 0;
+  FORM_FIELD_TYPE_SELECT = 1;
+  FORM_FIELD_TYPE_TEXT = 2;
+  FORM_FIELD_TYPE_BOOLEAN = 3;
+  FORM_FIELD_TYPE_MULTI_SELECT = 4;
+  FORM_FIELD_TYPE_RANK_PRIORITIES = 5;
+}
+
+enum ElicitationTrigger {
+  ELICITATION_TRIGGER_UNSPECIFIED = 0;
+  ELICITATION_TRIGGER_CALLBACK = 1;
+  ELICITATION_TRIGGER_ERROR_RETRY = 2;
+}
+
+message SelectOption {
+  string value = 1;
+  string label = 2;
+  string description = 3;
+  bool is_default = 4;
+  anthropic.bard.api.v1alpha.ElicitationResponse.ApprovalOption approval_option = 5;
+  bool is_deny = 6;
+  string preview = 7;
+}
+
+message FormField {
+  enum TextKind {
+    TEXT_KIND_UNSPECIFIED = 0;
+    TEXT_KIND_INTEGER = 1;
+    TEXT_KIND_DECIMAL = 2;
+    TEXT_KIND_EMAIL = 3;
+    TEXT_KIND_URL = 4;
+    TEXT_KIND_DATE = 5;
+    TEXT_KIND_DATE_TIME = 6;
+    TEXT_KIND_LIST = 7;
+  }
+  string name = 1;
+  anthropic.bard.api.v1alpha.FormFieldType type = 2;
+  string label = 3;
+  string description = 4;
+  string placeholder = 5;
+  repeated anthropic.bard.api.v1alpha.SelectOption options = 6;
+  bool multiline = 7;
+  bool required = 8;
+  anthropic.bard.api.v1alpha.FormField.TextKind text_kind = 9;
+}
+
+message StringList {
+  repeated string values = 1;
+}
+
+message FormFieldValue {
+  string field_name = 1;
+  oneof value {
+    string string_value = 2;
+    int64 number_value = 3;
+    bool boolean_value = 4;
+    anthropic.bard.api.v1alpha.StringList string_list_value = 5;
+  }
+}
+
+message ElicitationRequest {
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    STATUS_PENDING = 1;
+    STATUS_COMPLETED = 2;
+    STATUS_CANCELLED = 3;
+  }
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    KIND_APPROVAL = 1;
+    KIND_QUESTION = 2;
+    KIND_INPUT = 3;
+    KIND_DEVICE_STEP_UP = 4;
+    KIND_SESSION_STEP_UP = 5;
+    KIND_MCP_AUTH = 6;
+    KIND_CREDENTIAL_REFRESH = 7;
+    KIND_CONNECTOR_RECONNECT = 8;
+    KIND_ATTUNE_SCORE = 9;
+  }
+  enum DecisionReasonType {
+    DECISION_REASON_TYPE_UNSPECIFIED = 0;
+    DECISION_REASON_TYPE_RULE = 1;
+    DECISION_REASON_TYPE_MODE = 2;
+    DECISION_REASON_TYPE_SUBCOMMAND_RESULTS = 3;
+    DECISION_REASON_TYPE_PERMISSION_PROMPT_TOOL = 4;
+    DECISION_REASON_TYPE_HOOK = 5;
+    DECISION_REASON_TYPE_ASYNC_AGENT = 6;
+    DECISION_REASON_TYPE_SANDBOX_OVERRIDE = 7;
+    DECISION_REASON_TYPE_WORKING_DIR = 8;
+    DECISION_REASON_TYPE_SAFETY_CHECK = 9;
+    DECISION_REASON_TYPE_CLASSIFIER = 10;
+    DECISION_REASON_TYPE_OTHER = 11;
+  }
+  enum StepUpReason {
+    STEP_UP_REASON_UNSPECIFIED = 0;
+    STEP_UP_REASON_NO_PROOF = 1;
+    STEP_UP_REASON_PROOF_REJECTED = 2;
+  }
+  message ReportedAction {
+    enum Subject {
+      SUBJECT_UNSPECIFIED = 0;
+      SUBJECT_COMPUTER_ACCESS = 1;
+      SUBJECT_SCHEDULE_TASK = 2;
+      SUBJECT_SCHEDULE_TASK_CHANGE = 3;
+      SUBJECT_PLAN = 4;
+    }
+    message ResolvedResource {
+      string resource_id = 1;
+      string display_name = 2;
+    }
+    message ScheduleDetail {
+      string name = 1;
+      string display_when = 2;
+      optional string time_zone = 3;
+    }
+    message PlanDetail {
+      string markdown = 1;
+    }
+    string tool_name = 1;
+    string tool_input = 2;
+    optional string display_tool_name = 3;
+    optional string display_tool_input = 4;
+    bool display_tool_input_truncated = 5;
+    repeated anthropic.bard.api.v1alpha.ElicitationRequest.ReportedAction.ResolvedResource resolved_resources = 6;
+    anthropic.bard.api.v1alpha.ElicitationRequest.ReportedAction.Subject subject = 7;
+    anthropic.bard.api.v1alpha.ElicitationRequest.ReportedAction.ScheduleDetail schedule = 8;
+    optional string display_summary = 9;
+    anthropic.bard.api.v1alpha.ElicitationRequest.ReportedAction.PlanDetail plan = 11;
+  }
+  anthropic.bard.api.v1alpha.ElicitationRequest.Status status = 1;
+  string title = 2;
+  string description = 3;
+  anthropic.bard.api.v1alpha.TextFormat description_format = 6;
+  repeated anthropic.bard.api.v1alpha.FormField fields = 4;
+  repeated anthropic.bard.api.v1alpha.FormFieldValue current_values = 5;
+  optional string external_url = 7;
+  optional anthropic.bard.api.v1alpha.ElicitationTrigger trigger = 8;
+  optional string origin_server_id = 9;
+  anthropic.bard.api.v1alpha.ElicitationRequest.Kind kind = 10;
+  string ask_nonce = 11;
+  google.protobuf.Timestamp deadline = 12;
+  anthropic.bard.api.v1alpha.ElicitationRequest.ReportedAction reported_action = 13;
+  google.protobuf.Timestamp asked_at = 14;
+  optional string mcp_requested_schema = 26;
+  optional string tool_use_id = 17;
+  repeated anthropic.bard.api.v1alpha.DescriptionBlock rich_description = 18;
+  optional bool holds_conversation = 19;
+  anthropic.bard.api.v1alpha.Actor requester = 20;
+  optional bool accepts_typed_answer = 21;
+  bool requires_user_interaction = 22;
+  anthropic.bard.api.v1alpha.ElicitationRequest.DecisionReasonType decision_reason_type = 23;
+  anthropic.bard.api.v1alpha.Icon icon = 24;
+  optional anthropic.bard.api.v1alpha.ElicitationRequest.StepUpReason step_up_reason = 25;
+}
+
+message ElicitationResponse {
+  enum Verdict {
+    VERDICT_UNSPECIFIED = 0;
+    VERDICT_APPROVED = 1;
+    VERDICT_DECLINED = 2;
+  }
+  enum StepUpDecision {
+    STEP_UP_DECISION_UNSPECIFIED = 0;
+    STEP_UP_DECISION_VERIFIED = 1;
+    STEP_UP_DECISION_DECLINED = 2;
+  }
+  enum ApprovalOption {
+    APPROVAL_OPTION_UNSPECIFIED = 0;
+    APPROVAL_OPTION_ONCE = 1;
+    APPROVAL_OPTION_ALWAYS = 2;
+    APPROVAL_OPTION_PER_CHAT = 3;
+    APPROVAL_OPTION_SITE = 4;
+  }
+  message AlwaysAllowTool {
+    string server_uuid = 1;
+    string tool_name = 2;
+  }
+  message AlwaysAllowSelection {
+    repeated anthropic.bard.api.v1alpha.ElicitationResponse.AlwaysAllowTool tools = 1;
+  }
+  repeated anthropic.bard.api.v1alpha.FormFieldValue values = 1;
+  string ask_nonce = 2;
+  string answered_by_account_id = 3;
+  google.protobuf.Timestamp answered_at = 4;
+  anthropic.bard.api.v1alpha.ElicitationResponse.Verdict verdict = 5;
+  anthropic.bard.api.v1alpha.ElicitationResponse.StepUpDecision step_up_decision = 6;
+  anthropic.bard.api.v1alpha.ElicitationResponse.ApprovalOption approval_option = 7;
+  anthropic.bard.api.v1alpha.ElicitationResponse.AlwaysAllowSelection always_allow_tools = 8;
+}
+
+message AlwaysAllowOutcome {
+  enum SaveStatus {
+    SAVE_STATUS_UNSPECIFIED = 0;
+    SAVE_STATUS_SAVED = 1;
+    SAVE_STATUS_FAILED = 2;
+    SAVE_STATUS_TIMEOUT = 3;
+  }
+  message NotWrittenTool {
+    enum Reason {
+      REASON_UNSPECIFIED = 0;
+      REASON_NOT_SELECTED = 1;
+      REASON_NEEDS_APPROVAL_KEPT = 2;
+      REASON_NOT_SAVED = 3;
+    }
+    string server_uuid = 1;
+    string tool_name = 2;
+    anthropic.bard.api.v1alpha.AlwaysAllowOutcome.NotWrittenTool.Reason reason = 3;
+  }
+  anthropic.bard.api.v1alpha.AlwaysAllowOutcome.SaveStatus save_status = 1;
+  int32 n_grantable = 2;
+  int32 n_written = 3;
+  repeated anthropic.bard.api.v1alpha.AlwaysAllowOutcome.NotWrittenTool not_written = 4;
+}
+
+message Elicitation {
+  enum Outcome {
+    OUTCOME_UNSPECIFIED = 0;
+    OUTCOME_ANSWERED = 1;
+    OUTCOME_EXPIRED = 2;
+    OUTCOME_SUPERSEDED = 3;
+    OUTCOME_RESOLVED_ELSEWHERE = 4;
+    OUTCOME_CLOSED = 5;
+  }
+  string id = 1;
+  string conversation_id = 2;
+  int32 index = 5;
+  anthropic.bard.api.v1alpha.ElicitationRequest request = 3;
+  optional anthropic.bard.api.v1alpha.ElicitationResponse response = 4;
+  repeated google.protobuf.Any extras = 6;
+  anthropic.bard.api.v1alpha.Elicitation.Outcome outcome = 8;
+  anthropic.bard.api.v1alpha.AlwaysAllowOutcome always_allow_outcome = 9;
+}
+
+message DescriptionBlock {
+  string text = 1;
+  anthropic.bard.api.v1alpha.TextFormat text_format = 2;
+  bool is_truncated = 3;
+  oneof display {
+    anthropic.bard.api.v1alpha.LabelValueTable table = 4;
+    anthropic.bard.api.v1alpha.InputExcerpt input_excerpt = 5;
+    anthropic.bard.api.v1alpha.ConsentNotice notice = 6;
+    anthropic.bard.api.v1alpha.WorkerText worker_text = 7;
+    anthropic.bard.api.v1alpha.ToolAttribution attribution = 8;
+  }
+}
+
+message WorkerText {
+}
+
+message InputExcerpt {
+}
+
+message ConsentNotice {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    KIND_UNTRUSTED_CONTENT_IN_CONTEXT = 1;
+    KIND_INPUT_NOT_PARSED = 2;
+    KIND_INPUT_CHARACTERS_REMOVED = 3;
+    KIND_TOOL_NAME_RESEMBLES_TRUSTED = 4;
+    KIND_TOOL_NAME_NON_ASCII = 5;
+    KIND_NO_PAYLOAD = 6;
+    KIND_REQUIRED_BY_ORG_POLICY = 7;
+    KIND_ALLOW_SCOPE = 9;
+  }
+  anthropic.bard.api.v1alpha.ConsentNotice.Kind kind = 1;
+}
+
+message ToolAttribution {
+  enum Source {
+    SOURCE_UNSPECIFIED = 0;
+    SOURCE_CONNECTOR = 1;
+    SOURCE_COMPUTER = 2;
+  }
+  anthropic.bard.api.v1alpha.ToolAttribution.Source source = 1;
+}

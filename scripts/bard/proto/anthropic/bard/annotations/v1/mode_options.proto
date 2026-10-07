@@ -1,0 +1,5 @@
+syntax = "proto3";
+
+package anthropic.bard.annotations.v1;
+
+import "google/protobuf/descriptor.proto";

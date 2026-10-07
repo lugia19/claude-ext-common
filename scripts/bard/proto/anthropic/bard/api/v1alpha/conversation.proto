@@ -1,0 +1,501 @@
+syntax = "proto3";
+
+package anthropic.bard.api.v1alpha;
+
+import "anthropic/bard/api/v1alpha/claude_code_display.proto";
+import "anthropic/bard/api/v1alpha/conversation_members.proto";
+import "anthropic/bard/api/v1alpha/file_display.proto";
+import "anthropic/bard/api/v1alpha/turn_model_fallback.proto";
+import "anthropic/bard/api/v1alpha/workspace_panel_display.proto";
+import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";
+
+enum WorkMode {
+  WORK_MODE_UNSPECIFIED = 0;
+  WORK_MODE_CHAT = 1;
+  WORK_MODE_WORKSPACE_PROXY = 3;
+  WORK_MODE_TOOL_FAULT_PROXY = 4;
+  WORK_MODE_FULL_PROXY = 5;
+}
+
+enum ResearchMode {
+  RESEARCH_MODE_UNSPECIFIED = 0;
+  RESEARCH_MODE_LIGHT = 1;
+  RESEARCH_MODE_ADVANCED = 2;
+}
+
+enum ToolSearchMode {
+  TOOL_SEARCH_MODE_UNSPECIFIED = 0;
+  TOOL_SEARCH_MODE_AUTO = 1;
+  TOOL_SEARCH_MODE_ON = 2;
+  TOOL_SEARCH_MODE_OFF = 3;
+}
+
+enum PermissionMode {
+  PERMISSION_MODE_UNSPECIFIED = 0;
+  PERMISSION_MODE_ACCEPT_EDITS = 1;
+  PERMISSION_MODE_AUTO = 2;
+}
+
+enum ChatMemoryMode {
+  CHAT_MEMORY_MODE_UNSPECIFIED = 0;
+  CHAT_MEMORY_MODE_ENABLED = 1;
+  CHAT_MEMORY_MODE_DISABLED = 2;
+}
+
+enum FileKind {
+  FILE_KIND_UNSPECIFIED = 0;
+  FILE_KIND_IMAGE = 1;
+  FILE_KIND_BLOB = 2;
+  FILE_KIND_DOCUMENT = 3;
+}
+
+enum Role {
+  ROLE_UNSPECIFIED = 0;
+  ROLE_USER = 1;
+  ROLE_ASSISTANT = 2;
+  ROLE_SYSTEM = 3;
+}
+
+enum InputMode {
+  INPUT_MODE_UNSPECIFIED = 0;
+  INPUT_MODE_TEXT = 1;
+  INPUT_MODE_RETRY = 2;
+  INPUT_MODE_VOICE = 3;
+  INPUT_MODE_SPEECH_INPUT = 4;
+  INPUT_MODE_ARTIFACT_COMMENT = 5;
+  INPUT_MODE_UNREVIEWED = 6;
+  INPUT_MODE_APP_INTENT = 7;
+}
+
+enum TurnStartKind {
+  TURN_START_KIND_UNSPECIFIED = 0;
+  TURN_START_KIND_USER_MESSAGE = 1;
+  TURN_START_KIND_SCHEDULE = 2;
+  TURN_START_KIND_VOICE_CALL = 3;
+  TURN_START_KIND_DEFERRED_USER_TURN = 5;
+  TURN_START_KIND_MANUAL_RUN = 6;
+  TURN_START_KIND_AGENT_RELAY = 7;
+  TURN_START_KIND_SELF_STARTED = 9;
+}
+
+enum FeedbackType {
+  FEEDBACK_TYPE_UNSPECIFIED = 0;
+  FEEDBACK_TYPE_UPVOTE = 1;
+  FEEDBACK_TYPE_FLAG = 2;
+  FEEDBACK_TYPE_FLAG_BUG = 3;
+  FEEDBACK_TYPE_FLAG_HARMFUL = 4;
+  FEEDBACK_TYPE_FLAG_REFUSAL = 5;
+  FEEDBACK_TYPE_FLAG_FILE = 6;
+  FEEDBACK_TYPE_FLAG_INSTRUCTIONS = 7;
+  FEEDBACK_TYPE_FLAG_FACTS = 8;
+  FEEDBACK_TYPE_FLAG_INCOMPLETE = 9;
+  FEEDBACK_TYPE_FLAG_OTHER = 10;
+  FEEDBACK_TYPE_FLAG_THOUGHTS = 12;
+  FEEDBACK_TYPE_FLAG_WEB_SEARCH_OVERTRIGGER = 13;
+  FEEDBACK_TYPE_FLAG_WEB_SEARCH_UNDERTRIGGER = 14;
+  FEEDBACK_TYPE_FLAG_WEB_SEARCH_SOURCES = 15;
+  FEEDBACK_TYPE_FLAG_THINKING_UNDERTRIGGER = 16;
+  FEEDBACK_TYPE_FLAG_MEMORY = 17;
+  FEEDBACK_TYPE_FLAG_CONSTITUTION = 18;
+  FEEDBACK_TYPE_SAFETY_CLASSIFIER_FALSE_POSITIVE = 19;
+  FEEDBACK_TYPE_FLAG_ARTIFACT_FILE = 20;
+  FEEDBACK_TYPE_FLAG_ARTIFACT_BROKEN = 21;
+  FEEDBACK_TYPE_FLAG_ARTIFACT_GENERIC = 22;
+  FEEDBACK_TYPE_FLAG_ARTIFACT_BRAND = 23;
+  FEEDBACK_TYPE_FLAG_ARTIFACT_UNWANTED = 24;
+  FEEDBACK_TYPE_FLAG_ARTIFACT_OVEREDIT = 25;
+  FEEDBACK_TYPE_FLAG_ARTIFACT_NO_LOAD = 26;
+  FEEDBACK_TYPE_FLAG_ARTIFACT_SLOW = 27;
+  FEEDBACK_TYPE_FLAG_ARTIFACT_CUTOFF = 28;
+}
+
+enum StopReason {
+  STOP_REASON_UNSPECIFIED = 0;
+  STOP_REASON_END_TURN = 1;
+  STOP_REASON_MAX_TOKENS = 2;
+  STOP_REASON_TOOL_USE = 3;
+  STOP_REASON_REFUSAL = 4;
+  STOP_REASON_STOP_SEQUENCE = 5;
+  STOP_REASON_PROMPT_INJECTION_RISK = 6;
+  STOP_REASON_PAUSE_TURN = 7;
+  STOP_REASON_CONVERSATION_LENGTH_LIMIT = 8;
+  STOP_REASON_MODEL_CONTEXT_WINDOW_EXCEEDED = 9;
+  STOP_REASON_USER_CANCELED = 10;
+  STOP_REASON_ERROR = 11;
+  STOP_REASON_TOOL_USE_LIMIT = 12;
+  STOP_REASON_USER_CANCELED_FOR_QUEUED_MESSAGE = 13;
+  STOP_REASON_ANSWERED_WITH_LATER_MESSAGE = 14;
+  STOP_REASON_DECLINED_TO_REPLY = 15;
+}
+
+enum ErrorClass {
+  ERROR_CLASS_UNSPECIFIED = 0;
+  ERROR_CLASS_RATE_LIMIT = 1;
+  ERROR_CLASS_OVERLOADED = 2;
+  ERROR_CLASS_AUTHENTICATION_FAILED = 3;
+  ERROR_CLASS_PERMISSION_DENIED = 4;
+  ERROR_CLASS_NOT_FOUND = 5;
+  ERROR_CLASS_INVALID_REQUEST = 6;
+  ERROR_CLASS_REQUEST_TOO_LARGE = 7;
+  ERROR_CLASS_CONTEXT_EXCEEDED = 8;
+  ERROR_CLASS_MODEL_GATED = 9;
+  ERROR_CLASS_SERVER_ERROR = 10;
+  ERROR_CLASS_CONTENT_FILTER_BLOCKED = 11;
+  ERROR_CLASS_SPEND_LIMIT = 12;
+  ERROR_CLASS_CREDITS_REQUIRED = 13;
+  ERROR_CLASS_EXECUTOR_SILENT = 14;
+  ERROR_CLASS_MAX_OUTPUT_TOKENS = 15;
+  ERROR_CLASS_EXECUTION_STOPPED = 16;
+  ERROR_CLASS_TURN_LIMIT_REACHED = 17;
+  ERROR_CLASS_WORKER_LOST = 18;
+  ERROR_CLASS_INTERRUPTED = 19;
+  ERROR_CLASS_CONCURRENCY_LIMIT = 20;
+  ERROR_CLASS_WORKSPACE_FAILED = 21;
+  ERROR_CLASS_SEND_REFUSED = 22;
+  ERROR_CLASS_SIGN_IN_REQUIRED = 23;
+  ERROR_CLASS_DEVICE_VERIFICATION_REQUIRED = 24;
+  ERROR_CLASS_PERMISSION_MODE_REQUIRED = 26;
+}
+
+enum ChannelEventSource {
+  CHANNEL_EVENT_SOURCE_UNSPECIFIED = 0;
+  CHANNEL_EVENT_SOURCE_GITHUB_WEBHOOK_ACTIVITY = 1;
+  CHANNEL_EVENT_SOURCE_CI_MONITOR_EVENT = 2;
+}
+
+enum RoutineFireReason {
+  ROUTINE_FIRE_REASON_UNSPECIFIED = 0;
+  ROUTINE_FIRE_REASON_SCHEDULED = 1;
+  ROUTINE_FIRE_REASON_MANUAL = 2;
+}
+
+message ModelId {
+  oneof id {
+    bool default = 1;
+    string identifier = 2;
+  }
+}
+
+message Conversation {
+  enum WorkspaceUpgradePhase {
+    WORKSPACE_UPGRADE_PHASE_UNSPECIFIED = 0;
+    WORKSPACE_UPGRADE_PHASE_NONE = 1;
+    WORKSPACE_UPGRADE_PHASE_PROVISIONING = 2;
+    WORKSPACE_UPGRADE_PHASE_UPGRADED = 3;
+    WORKSPACE_UPGRADE_PHASE_BRIDGE_ONLY = 4;
+    WORKSPACE_UPGRADE_PHASE_FAILED = 5;
+  }
+  enum NeedsInputKind {
+    NEEDS_INPUT_KIND_UNSPECIFIED = 0;
+    NEEDS_INPUT_KIND_PERMISSION = 1;
+    NEEDS_INPUT_KIND_QUESTION = 2;
+  }
+  enum LiveStatus {
+    LIVE_STATUS_UNSPECIFIED = 0;
+    LIVE_STATUS_RUNNING = 1;
+  }
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    STATUS_IDLE = 1;
+    STATUS_RUNNING = 2;
+    STATUS_WAITING_FOR_INPUT = 3;
+    STATUS_COMPLETED = 4;
+    STATUS_ERROR = 5;
+    STATUS_RECOVERING = 6;
+  }
+  enum StatusKind {
+    STATUS_KIND_UNSPECIFIED = 0;
+    STATUS_KIND_ERROR_RESCUABLE = 1;
+    STATUS_KIND_ERROR_TERMINAL = 2;
+    STATUS_KIND_RUNNING_COMPACTION = 3;
+    STATUS_KIND_RUNNING_UPSTREAM_RETRY = 4;
+    STATUS_KIND_RUNNING_WORKSPACE_SETUP = 5;
+    STATUS_KIND_RUNNING_BOOT = 6;
+    STATUS_KIND_RUNNING_RETRY_REWIND = 7;
+    STATUS_KIND_RUNNING_BACKGROUND_WORK = 8;
+  }
+  string id = 1;
+  string title = 2;
+  anthropic.bard.api.v1alpha.Conversation.Status status = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
+  anthropic.bard.api.v1alpha.ModelId model = 6;
+  optional string current_leaf_message_id = 7;
+  repeated google.protobuf.Any extras = 8;
+  optional string status_detail = 9;
+  anthropic.bard.api.v1alpha.ConversationSettings settings = 10;
+  bool is_starred = 11;
+  optional bool is_archived = 47;
+  bool is_temporary = 12;
+  string summary = 13;
+  optional string project_id = 14;
+  repeated anthropic.bard.api.v1alpha.BackgroundTask background_tasks = 15;
+  anthropic.bard.api.v1alpha.TodoList session_todos = 16;
+  optional anthropic.bard.api.v1alpha.WorkMode work_mode = 17;
+  optional anthropic.bard.api.v1alpha.Conversation.WorkspaceUpgradePhase workspace_upgrade_phase = 18;
+  optional bool computer_tools_eligible = 19;
+  optional bool ended_by_model = 21;
+  bool permission_mode_supported = 20;
+  optional anthropic.bard.api.v1alpha.Conversation.StatusKind status_kind = 22;
+  optional anthropic.bard.api.v1alpha.ErrorClass status_error_class = 35;
+  optional bool status_retrying = 57;
+  google.protobuf.Timestamp status_limit_resets_at = 61;
+  optional string status_user_message_id = 23;
+  optional string status_assistant_message_id = 24;
+  bool interrupt_allowed = 52;
+  optional bool native_auto_mode_available = 25;
+  optional bool permission_mode_skips_approvals = 63;
+  optional int64 revision_ns = 48;
+  optional bool needs_input = 27;
+  anthropic.bard.api.v1alpha.Conversation.NeedsInputKind needs_input_kind = 28;
+  anthropic.bard.api.v1alpha.Conversation.LiveStatus live_status = 29;
+  google.protobuf.Timestamp live_status_started_at = 30;
+  google.protobuf.Timestamp last_settled_at = 31;
+  optional bool has_assistant_outputs = 32;
+  google.protobuf.Timestamp last_read_at = 33;
+  repeated anthropic.bard.api.v1alpha.WorkspaceOutputReference outputs = 36;
+  repeated anthropic.bard.api.v1alpha.WorkspaceOutputReference uploads = 51;
+  optional anthropic.bard.api.v1alpha.SafeguardFallbackState safeguard_fallback = 37;
+  optional string local_project_id = 38;
+  optional anthropic.bard.api.v1alpha.ConversationRoutineRun routine_run = 45;
+  optional int64 max_upload_bytes = 39;
+  optional int64 org_upload_max_bytes = 44;
+  optional int64 inline_attachment_max_accepted_bytes = 54;
+  optional int64 inline_attachments_total_max_accepted_bytes = 55;
+  repeated anthropic.bard.api.v1alpha.ConversationUserAction unavailable_actions = 34;
+  optional anthropic.bard.api.v1alpha.ConversationWayOut way_out = 53;
+  optional string send_unavailable_text = 59;
+  optional bool device_bound = 41;
+  optional anthropic.bard.api.v1alpha.WorkspaceUpgradeState.BoundDevice bound_device = 42;
+  optional anthropic.bard.api.v1alpha.WorkspaceUpgradeState.BoundDevicePresence bound_device_presence = 46;
+  optional int64 bound_device_outage_id = 56;
+  bool background_work_running = 50;
+  optional anthropic.bard.api.v1alpha.ComputerStatus computer_status = 43;
+  optional anthropic.bard.api.v1alpha.FolderAccess folder_access = 49;
+  optional anthropic.bard.api.v1alpha.ConversationRoster roster = 60;
+}
+
+message NewConversationDefaults {
+  optional anthropic.bard.api.v1alpha.WorkMode work_mode = 1;
+  repeated anthropic.bard.api.v1alpha.ConversationUserAction unavailable_actions = 2;
+  optional bool computer_tools_eligible = 3;
+  optional bool native_auto_mode_available = 4;
+  anthropic.bard.api.v1alpha.ConversationSettings settings = 5;
+  optional int64 max_upload_bytes = 6;
+  optional int64 org_upload_max_bytes = 7;
+  optional int64 inline_attachment_max_accepted_bytes = 8;
+  optional int64 inline_attachments_total_max_accepted_bytes = 9;
+}
+
+message ConversationSettings {
+  optional bool enabled_web_search = 1;
+  optional bool enabled_drive_search = 3;
+  optional bool enabled_gmail_search = 4;
+  optional bool enabled_calendar_search = 5;
+  optional bool enabled_computer_tools = 6;
+  optional bool enabled_imagine = 7;
+  optional anthropic.bard.api.v1alpha.McpToolSettings enabled_mcp_tools = 8;
+  optional anthropic.bard.api.v1alpha.ResearchMode research_mode = 10;
+  optional anthropic.bard.api.v1alpha.ToolSearchMode tool_search_mode = 14;
+  optional int32 permission_mode = 15;
+  optional string thinking_mode_token = 16;
+  optional string effort_level_token = 17;
+  optional string create_mode_token = 18;
+  optional anthropic.bard.api.v1alpha.ChatMemoryMode chat_memory_mode = 19;
+  optional bool enabled_artifacts = 20;
+  optional string guided_mode = 21;
+  optional anthropic.bard.api.v1alpha.DesignSystemsSetting design_systems = 22;
+  optional anthropic.bard.api.v1alpha.StartedWithArtifact started_with_artifact = 23;
+  optional string started_as_artifact_type_id = 24;
+}
+
+message McpToolSettings {
+  map<string, bool> tools = 1;
+}
+
+message Attachment {
+  string id = 1;
+  string file_name = 2;
+  int64 file_size = 3;
+  string media_type = 4;
+  string url = 5;
+  string thumbnail_url = 6;
+  repeated google.protobuf.Any extras = 7;
+  anthropic.bard.api.v1alpha.FileKind file_kind = 8;
+  anthropic.bard.api.v1alpha.PresentationKind presentation_kind = 9;
+  string document_id = 10;
+  string path = 11;
+  string session_path = 12;
+  bool artifact_publishable = 13;
+  anthropic.bard.api.v1alpha.CustomizationKind customization_kind = 14;
+  int32 thumbnail_width = 15;
+  int32 thumbnail_height = 16;
+  int32 preview_width = 17;
+  int32 preview_height = 18;
+  bool unavailable = 19;
+  optional string unavailable_text = 22;
+}
+
+message InlineAttachment {
+  string file_name = 1;
+  int64 file_size = 2;
+  string file_type = 3;
+  string extracted_content = 4;
+}
+
+message Message {
+  enum SendState {
+    SEND_STATE_UNSPECIFIED = 0;
+    SEND_STATE_QUEUED = 1;
+    SEND_STATE_NOT_SENT = 2;
+  }
+  string id = 1;
+  string conversation_id = 2;
+  anthropic.bard.api.v1alpha.Role role = 3;
+  int32 index = 4;
+  bool is_complete = 6;
+  anthropic.bard.api.v1alpha.StopReason stop_reason = 7;
+  google.protobuf.Timestamp created_at = 9;
+  optional string parent_message_id = 11;
+  repeated anthropic.bard.api.v1alpha.Attachment attachments = 12;
+  anthropic.bard.api.v1alpha.FeedbackType feedback = 13;
+  repeated google.protobuf.Any extras = 14;
+  anthropic.bard.api.v1alpha.TurnStartKind turn_start_kind = 15;
+  optional anthropic.bard.api.v1alpha.StopDetails stop_details = 16;
+  anthropic.bard.api.v1alpha.Message.SendState send_state = 17;
+  optional anthropic.bard.api.v1alpha.QueuedDetail queued_detail = 18;
+  optional string supersedes_display_id = 19;
+  optional anthropic.bard.api.v1alpha.InputMode input_mode = 21;
+  repeated anthropic.bard.api.v1alpha.AttachedFolder attached_folders = 22;
+  optional anthropic.bard.api.v1alpha.LocalProject local_project = 23;
+  optional string turn_start_caption = 24;
+  bool siblings_viewable = 25;
+  optional string author_account_uuid = 26;
+  optional anthropic.bard.api.v1alpha.TurnModelFallback turn_model_fallback = 27;
+}
+
+message QueuedDetail {
+  string status_text = 1;
+  int32 ordering_hint = 2;
+  optional bool can_cancel = 3;
+  optional bool can_retry = 4;
+  optional anthropic.bard.api.v1alpha.ErrorClass error_class = 5;
+  optional string error_type = 6;
+}
+
+message StopDetails {
+  string type = 1;
+  optional string category = 2;
+  optional string explanation = 3;
+  optional string learn_more_url = 4;
+  repeated anthropic.bard.api.v1alpha.RefusalUrl urls = 5;
+  optional anthropic.bard.api.v1alpha.RetrySuggestion retry_suggestion = 6;
+  optional anthropic.bard.api.v1alpha.ErrorStopDetails error = 7;
+  optional string display_text = 9;
+}
+
+message RefusalUrl {
+  string label = 1;
+  string href = 2;
+}
+
+message RetrySuggestion {
+  string model = 1;
+  optional anthropic.bard.api.v1alpha.ThinkingConfig thinking = 2;
+}
+
+message ThinkingConfig {
+  string type = 1;
+  optional string effort = 2;
+  optional string mode = 3;
+}
+
+message ModelFallbackEndpoint {
+  string model = 1;
+  optional anthropic.bard.api.v1alpha.ThinkingConfig thinking = 2;
+}
+
+message SafeguardFallbackState {
+  optional string turn_message_id = 1;
+  repeated anthropic.bard.api.v1alpha.SafeguardFallbackHop hops = 2;
+  optional string explanation = 3;
+  optional string learn_more_url = 4;
+  repeated anthropic.bard.api.v1alpha.RefusalUrl urls = 5;
+}
+
+message SafeguardFallbackHop {
+  anthropic.bard.api.v1alpha.ModelFallbackEndpoint from_model = 1;
+  anthropic.bard.api.v1alpha.ModelFallbackEndpoint to_model = 2;
+  optional string category = 3;
+}
+
+message ErrorStopDetails {
+  anthropic.bard.api.v1alpha.ErrorClass class = 1;
+  optional int32 http_status = 2;
+  optional bool retryable = 3;
+  optional string type = 4;
+  optional string code = 5;
+}
+
+message CompactionDivider {
+  optional int64 pre_tokens = 1;
+  optional int64 post_tokens = 2;
+}
+
+message ChannelEvent {
+  anthropic.bard.api.v1alpha.ChannelEventSource source = 1;
+}
+
+message ContextClearedDivider {
+}
+
+message AttachedFolder {
+  string path = 1;
+  string display_name = 2;
+}
+
+message FolderAccess {
+  anthropic.bard.api.v1alpha.WorkspaceUpgradeState.BoundDevice device = 1;
+  repeated anthropic.bard.api.v1alpha.AttachedFolder folders = 2;
+  google.protobuf.Timestamp reported_at = 3;
+}
+
+message LocalProject {
+  string id = 1;
+  string name = 2;
+  string instructions = 3;
+  string description = 4;
+  repeated anthropic.bard.api.v1alpha.LocalProjectLink links = 5;
+}
+
+message LocalProjectLink {
+  string url = 1;
+  string title = 2;
+}
+
+message ConversationRoutineRun {
+  string trigger_id = 1;
+  anthropic.bard.api.v1alpha.RoutineFireReason fire_reason = 2;
+  google.protobuf.Timestamp fired_at = 3;
+}
+
+message DesignSystemsSetting {
+  repeated string artifact_ids = 1;
+  bool declined = 2;
+}
+
+message StartedWithArtifact {
+  string artifact_id = 1;
+  optional string type_id = 2;
+}
+
+message ConversationWayOut {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    KIND_START_NEW_CONVERSATION = 1;
+    KIND_UPGRADE = 2;
+  }
+  anthropic.bard.api.v1alpha.ConversationWayOut.Kind kind = 1;
+  string label = 2;
+}

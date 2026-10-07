@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package anthropic.bard.api.v1alpha;
+
+import "google/protobuf/timestamp.proto";
+
+message ConversationRoster {
+  repeated anthropic.bard.api.v1alpha.ConversationMember members = 1;
+}
+
+message ConversationMember {
+  enum Role {
+    ROLE_UNSPECIFIED = 0;
+    ROLE_OWNER = 1;
+    ROLE_MEMBER = 2;
+  }
+  string account_uuid = 1;
+  anthropic.bard.api.v1alpha.ConversationMember.Role role = 3;
+  google.protobuf.Timestamp added_at = 4;
+}
+
+message AddMember {
+  string account_uuid = 1;
+}
+
+message RemoveMember {
+  string account_uuid = 1;
+}
+
+message LeaveConversation {
+}
+
+message SendMessageAsMember {
+  string message_id = 1;
+  string assistant_message_id = 2;
+  string text = 3;
+}

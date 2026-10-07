@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package anthropic.bard.api.v1alpha;
+
+import "anthropic/bard/api/v1alpha/content.proto";
+
+message Actor {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    KIND_USER = 1;
+    KIND_ASSISTANT = 2;
+    KIND_SYSTEM = 3;
+    KIND_CONNECTOR = 4;
+  }
+  anthropic.bard.api.v1alpha.Actor.Kind kind = 1;
+  string id = 2;
+  string display_name = 3;
+  anthropic.bard.api.v1alpha.Icon icon = 4;
+}

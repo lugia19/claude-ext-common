@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package anthropic.bard.api.v1alpha;
+
+enum ContextCategoryKind {
+  CONTEXT_CATEGORY_KIND_UNSPECIFIED = 0;
+  CONTEXT_CATEGORY_KIND_SYSTEM_PROMPT = 1;
+  CONTEXT_CATEGORY_KIND_MEMORY = 2;
+  CONTEXT_CATEGORY_KIND_TOOL_DEFINITIONS = 3;
+  CONTEXT_CATEGORY_KIND_PROJECT_KNOWLEDGE = 4;
+  CONTEXT_CATEGORY_KIND_ATTACHMENTS = 5;
+  CONTEXT_CATEGORY_KIND_IMAGES = 6;
+  CONTEXT_CATEGORY_KIND_HISTORY = 7;
+  CONTEXT_CATEGORY_KIND_TOOL_RESULTS = 8;
+}
+
+enum ContextAttribution {
+  CONTEXT_ATTRIBUTION_UNSPECIFIED = 0;
+  CONTEXT_ATTRIBUTION_ESTIMATED = 1;
+  CONTEXT_ATTRIBUTION_MEASURED = 2;
+}
+
+message ContextBreakdown {
+  repeated anthropic.bard.api.v1alpha.ContextCategory categories = 1;
+  string free_space_display_name = 2;
+  int32 used_tokens = 3;
+  int32 window_tokens = 4;
+  anthropic.bard.api.v1alpha.ContextAttribution attribution = 5;
+  optional int32 auto_compact_threshold_tokens = 6;
+  optional bool auto_compact_enabled = 7;
+}
+
+message ContextCategory {
+  anthropic.bard.api.v1alpha.ContextCategoryKind kind = 1;
+  string display_name = 2;
+  int32 tokens = 3;
+}

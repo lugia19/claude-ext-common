@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package anthropic.bard.api.v1alpha;
+
+enum StopGenerationIntent {
+  STOP_GENERATION_INTENT_UNSPECIFIED = 0;
+  STOP_GENERATION_INTENT_STOP = 1;
+  STOP_GENERATION_INTENT_SEND_NOW = 2;
+}

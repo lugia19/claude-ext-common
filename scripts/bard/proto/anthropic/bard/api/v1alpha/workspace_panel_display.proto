@@ -1,0 +1,223 @@
+syntax = "proto3";
+
+package anthropic.bard.api.v1alpha;
+
+import "anthropic/bard/api/v1alpha/content.proto";
+import "anthropic/bard/api/v1alpha/file_display.proto";
+import "google/protobuf/timestamp.proto";
+
+enum ConversationUserAction {
+  CONVERSATION_USER_ACTION_UNSPECIFIED = 0;
+  CONVERSATION_USER_ACTION_SEND_ATTACHMENTS = 1;
+  CONVERSATION_USER_ACTION_REGENERATE = 2;
+  CONVERSATION_USER_ACTION_EDIT_MESSAGE = 3;
+  CONVERSATION_USER_ACTION_UPDATE_CONVERSATION_SETTINGS = 4;
+  CONVERSATION_USER_ACTION_SUBMIT_CLIENT_TOOL_RESULT = 7;
+  CONVERSATION_USER_ACTION_SET_CURRENT_LEAF = 8;
+  CONVERSATION_USER_ACTION_SET_RESEARCH_MODE = 9;
+  CONVERSATION_USER_ACTION_RESEARCH_COMMAND = 10;
+  CONVERSATION_USER_ACTION_SEND_OUT_OF_CONTEXT_FILES = 11;
+  CONVERSATION_USER_ACTION_SET_WEB_SEARCH = 12;
+  CONVERSATION_USER_ACTION_SHARE_CONVERSATION = 13;
+  CONVERSATION_USER_ACTION_SELECT_MODEL = 14;
+  CONVERSATION_USER_ACTION_SEND_MESSAGE = 15;
+  CONVERSATION_USER_ACTION_RENAME_CONVERSATION = 16;
+  CONVERSATION_USER_ACTION_STAR_CONVERSATION = 17;
+  CONVERSATION_USER_ACTION_BRANCH_FROM_EARLIER_TURN = 18;
+  CONVERSATION_USER_ACTION_START_VOICE_CONVERSATION = 20;
+  CONVERSATION_USER_ACTION_MOVE_TO_PROJECT = 21;
+  CONVERSATION_USER_ACTION_DELETE_CONVERSATION = 22;
+  CONVERSATION_USER_ACTION_MESSAGE_FEEDBACK = 23;
+  CONVERSATION_USER_ACTION_BIND_DEVICE = 24;
+  CONVERSATION_USER_ACTION_SHARE_ARTIFACT = 25;
+  CONVERSATION_USER_ACTION_ARCHIVE_CONVERSATION = 26;
+  CONVERSATION_USER_ACTION_OPEN_FILE_BY_SANDBOX_PATH = 27;
+  CONVERSATION_USER_ACTION_ADD_MEMBER = 28;
+  CONVERSATION_USER_ACTION_REMOVE_MEMBER = 29;
+  CONVERSATION_USER_ACTION_LEAVE_CONVERSATION = 30;
+  CONVERSATION_USER_ACTION_SET_CONNECTORS = 31;
+  CONVERSATION_USER_ACTION_RESPOND_TO_ELICITATION = 32;
+  CONVERSATION_USER_ACTION_RETRY_FROM_EARLIER_TURN = 33;
+  CONVERSATION_USER_ACTION_MESSAGE_FEEDBACK_COMMENT = 34;
+}
+
+enum ModelCatalogSurface {
+  MODEL_CATALOG_SURFACE_UNSPECIFIED = 0;
+  MODEL_CATALOG_SURFACE_COWORK = 1;
+  MODEL_CATALOG_SURFACE_CODE = 2;
+}
+
+message WorkspaceUpgradeState {
+  enum SessionEnvironment {
+    SESSION_ENVIRONMENT_UNSPECIFIED = 0;
+    SESSION_ENVIRONMENT_BRIDGE = 1;
+    SESSION_ENVIRONMENT_CLOUD = 2;
+  }
+  enum BoundDevicePresence {
+    BOUND_DEVICE_PRESENCE_UNSPECIFIED = 0;
+    BOUND_DEVICE_PRESENCE_CONNECTED = 1;
+    BOUND_DEVICE_PRESENCE_UNAVAILABLE = 2;
+  }
+  message BoundDevice {
+    string id = 1;
+    string display_name = 2;
+  }
+  bool upgraded = 1;
+  anthropic.bard.api.v1alpha.WorkspaceUpgradeState.SessionEnvironment session_environment = 2;
+  string session_id = 3;
+  optional bool device_bound = 4;
+  optional anthropic.bard.api.v1alpha.WorkspaceUpgradeState.BoundDevice bound_device = 5;
+  anthropic.bard.api.v1alpha.PendingDeviceLink pending_device_link = 6;
+  optional anthropic.bard.api.v1alpha.WorkspaceUpgradeState.BoundDevicePresence bound_device_presence = 7;
+}
+
+message PendingDeviceLink {
+  string origin_session_id = 1;
+  int64 origin_version = 2;
+  bytes origin_commitment = 3;
+  google.protobuf.Timestamp expires_at = 4;
+}
+
+message ComputerStatus {
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    STATE_LINKED = 1;
+    STATE_UNLINKED = 2;
+    STATE_NO_COMPUTER_REGISTERED = 3;
+  }
+  message Action {
+    string label = 1;
+    string url = 2;
+    optional string url_path = 3;
+  }
+  anthropic.bard.api.v1alpha.ComputerStatus.State state = 1;
+  string text = 2;
+  anthropic.bard.api.v1alpha.ComputerStatus.Action action = 3;
+  string label = 4;
+  bool computer_used = 5;
+}
+
+message WorkspaceOutputs {
+  repeated anthropic.bard.api.v1alpha.WorkspaceOutputReference outputs = 1;
+}
+
+message WorkspaceOutputReference {
+  string display_name = 1;
+  string path = 2;
+  optional int64 size_bytes = 3;
+  google.protobuf.Timestamp presented_at = 4;
+  optional string file_id = 5;
+  string url = 6;
+  string thumbnail_url = 7;
+  optional string title = 8;
+  optional string media_type = 9;
+  anthropic.bard.api.v1alpha.CustomizationKind customization_kind = 10;
+  anthropic.bard.api.v1alpha.SkillSummary skill_summary = 11;
+  bool artifact_publishable = 12;
+  optional string published_url = 13;
+  optional string published_artifact_id = 14;
+  string download_url = 15;
+}
+
+message SandboxFileActivity {
+  uint64 change_seq = 1;
+}
+
+message WorkspaceResourceActivityList {
+  repeated anthropic.bard.api.v1alpha.WorkspaceResourceActivity entries = 1;
+}
+
+message WorkspaceResourceActivity {
+  enum Operation {
+    OPERATION_UNSPECIFIED = 0;
+    OPERATION_FILE_READ = 1;
+    OPERATION_FILE_WRITE = 2;
+    OPERATION_FILE_EDIT = 3;
+    OPERATION_WEB_SEARCH = 4;
+    OPERATION_WEB_FETCH = 5;
+    OPERATION_MCP_TOOL = 6;
+    OPERATION_BROWSER = 7;
+    OPERATION_SKILL = 8;
+  }
+  string tool_use_id = 1;
+  anthropic.bard.api.v1alpha.WorkspaceResourceActivity.Operation operation = 2;
+  string display_name = 3;
+  string detail = 4;
+  google.protobuf.Timestamp occurred_at = 5;
+  string browser_target = 6;
+  anthropic.bard.api.v1alpha.DisplayImage result_image = 7;
+  optional string title = 8;
+  string detail_display_name = 9;
+  anthropic.bard.api.v1alpha.Icon detail_icon = 10;
+  anthropic.bard.api.v1alpha.WorkspaceBrowserState.Engine browser_engine = 11;
+  string content_block_id = 12;
+  anthropic.bard.api.v1alpha.MemoryOpKind memory_op = 14;
+}
+
+message WorkspaceBrowserState {
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    STATE_NOT_AVAILABLE = 1;
+    STATE_AVAILABLE = 2;
+  }
+  enum Engine {
+    ENGINE_UNSPECIFIED = 0;
+    ENGINE_CONTAINER = 1;
+    ENGINE_PREVIEW_PANE = 2;
+    ENGINE_CLAUDE_IN_CHROME = 3;
+  }
+  message PreviewPaneState {
+    enum State {
+      STATE_UNSPECIFIED = 0;
+      STATE_NOT_AVAILABLE = 1;
+      STATE_TUNNEL_UNKNOWN = 2;
+      STATE_TUNNEL_UNAVAILABLE = 3;
+      STATE_CREDENTIAL_EXPIRED = 4;
+      STATE_NO_HOST = 5;
+      STATE_VIEWERS_ONLY = 6;
+      STATE_HOSTED = 7;
+      STATE_SERVER_DOWN = 8;
+      STATE_DEVICE_STEP_UP_REQUIRED = 9;
+    }
+    anthropic.bard.api.v1alpha.WorkspaceBrowserState.PreviewPaneState.State state = 1;
+    string holder_token_hash = 2;
+    int64 lease_epoch = 3;
+    int64 granted_at_seq = 4;
+    int32 viewer_count = 5;
+  }
+  anthropic.bard.api.v1alpha.WorkspaceBrowserState.State state = 1;
+  repeated anthropic.bard.api.v1alpha.WorkspaceBrowserState.Engine engines = 2;
+  anthropic.bard.api.v1alpha.WorkspaceBrowserState.PreviewPaneState preview_pane = 3;
+}
+
+message WorkspaceUnsupportedActions {
+  repeated anthropic.bard.api.v1alpha.ConversationUserAction unsupported_actions = 1;
+}
+
+message WorkspaceDeviceSignatureAsk {
+  message Item {
+    string event_uuid = 1;
+    string event_type = 2;
+    bytes body_sha256 = 3;
+  }
+  message FileCopyItem {
+    string file_id = 1;
+    string mount_path = 2;
+  }
+  string ask_id = 1;
+  string ask_nonce = 2;
+  string workspace_session_id = 3;
+  string bound_device_id = 4;
+  string origin_session_id = 5;
+  int64 origin_version = 6;
+  repeated anthropic.bard.api.v1alpha.WorkspaceDeviceSignatureAsk.Item items = 7;
+  google.protobuf.Timestamp expires_at = 8;
+  bytes origin_commitment = 9;
+  repeated anthropic.bard.api.v1alpha.WorkspaceDeviceSignatureAsk.FileCopyItem file_copies = 10;
+}
+
+message WorkspaceModelCatalog {
+  anthropic.bard.api.v1alpha.ModelCatalogSurface surface = 1;
+  optional string claude_code_version = 2;
+  optional string update_note = 3;
+}

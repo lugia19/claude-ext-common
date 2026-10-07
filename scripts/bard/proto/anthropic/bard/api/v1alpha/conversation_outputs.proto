@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package anthropic.bard.api.v1alpha;
+
+import "google/protobuf/timestamp.proto";
+
+enum LatestAssistantOutputKind {
+  LATEST_ASSISTANT_OUTPUT_KIND_UNSPECIFIED = 0;
+  LATEST_ASSISTANT_OUTPUT_KIND_DOCUMENT = 1;
+  LATEST_ASSISTANT_OUTPUT_KIND_SLIDES = 2;
+  LATEST_ASSISTANT_OUTPUT_KIND_SPREADSHEET = 3;
+  LATEST_ASSISTANT_OUTPUT_KIND_HTML = 4;
+  LATEST_ASSISTANT_OUTPUT_KIND_CODE = 5;
+  LATEST_ASSISTANT_OUTPUT_KIND_DATABASE = 6;
+  LATEST_ASSISTANT_OUTPUT_KIND_IMAGE = 7;
+  LATEST_ASSISTANT_OUTPUT_KIND_ARCHIVE = 8;
+  LATEST_ASSISTANT_OUTPUT_KIND_SKILL = 9;
+  LATEST_ASSISTANT_OUTPUT_KIND_OTHER = 10;
+  LATEST_ASSISTANT_OUTPUT_KIND_ARTIFACT = 11;
+}
+
+message ReadLatestAssistantOutputRequest {
+  string conversation_id = 1;
+}
+
+message ReadLatestAssistantOutputResponse {
+  anthropic.bard.api.v1alpha.LatestAssistantOutputKind kind = 1;
+  optional string display_name = 2;
+  google.protobuf.Timestamp marker_at = 3;
+  optional string published_artifact_id = 4;
+  optional int32 output_count = 5;
+}
+
+service ConversationOutputsService {
+  rpc ReadLatestAssistantOutput(anthropic.bard.api.v1alpha.ReadLatestAssistantOutputRequest) returns (anthropic.bard.api.v1alpha.ReadLatestAssistantOutputResponse);
+}

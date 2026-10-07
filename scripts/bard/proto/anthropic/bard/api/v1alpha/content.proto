@@ -1,0 +1,923 @@
+syntax = "proto3";
+
+package anthropic.bard.api.v1alpha;
+
+import "anthropic/bard/api/v1alpha/cancel_reason.proto";
+import "anthropic/bard/api/v1alpha/card_widget_display.proto";
+import "anthropic/bard/api/v1alpha/claude_code_display.proto";
+import "anthropic/bard/api/v1alpha/conversation_outputs.proto";
+import "anthropic/bard/api/v1alpha/display_table.proto";
+import "anthropic/bard/api/v1alpha/file_display.proto";
+import "anthropic/bard/api/v1alpha/icon.proto";
+import "anthropic/bard/api/v1alpha/image_annotation_display.proto";
+import "google/protobuf/any.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+enum ContentBlockState {
+  CONTENT_BLOCK_STATE_UNSPECIFIED = 0;
+  CONTENT_BLOCK_STATE_RUNNING = 1;
+  CONTENT_BLOCK_STATE_COMPLETE = 2;
+  CONTENT_BLOCK_STATE_ERROR = 3;
+  CONTENT_BLOCK_STATE_PENDING_APPROVAL = 4;
+  CONTENT_BLOCK_STATE_CANCELLED = 5;
+}
+
+enum TitleSource {
+  TITLE_SOURCE_UNSPECIFIED = 0;
+  TITLE_SOURCE_LIFECYCLE = 1;
+  TITLE_SOURCE_AUTHORED = 2;
+  TITLE_SOURCE_WORKER_CAPTION = 3;
+}
+
+enum BlockActionKind {
+  BLOCK_ACTION_KIND_UNSPECIFIED = 0;
+  BLOCK_ACTION_KIND_PRIMARY = 1;
+  BLOCK_ACTION_KIND_SECONDARY = 2;
+}
+
+enum BlockActionState {
+  BLOCK_ACTION_STATE_UNSPECIFIED = 0;
+  BLOCK_ACTION_STATE_ENABLED = 1;
+  BLOCK_ACTION_STATE_DONE = 2;
+  BLOCK_ACTION_STATE_DISABLED = 3;
+}
+
+enum RichItemListLayout {
+  RICH_ITEM_LIST_LAYOUT_UNSPECIFIED = 0;
+  RICH_ITEM_LIST_LAYOUT_LINK = 1;
+  RICH_ITEM_LIST_LAYOUT_SOURCES = 2;
+  RICH_ITEM_LIST_LAYOUT_LIST = 3;
+}
+
+enum StructuredCardResourceKind {
+  STRUCTURED_CARD_RESOURCE_KIND_UNSPECIFIED = 0;
+  STRUCTURED_CARD_RESOURCE_KIND_SCHEDULED_TASK = 1;
+  STRUCTURED_CARD_RESOURCE_KIND_GDRIVE_DOCUMENT = 2;
+  STRUCTURED_CARD_RESOURCE_KIND_GDRIVE_SPREADSHEET = 3;
+  STRUCTURED_CARD_RESOURCE_KIND_GDRIVE_PRESENTATION = 4;
+}
+
+enum MapMode {
+  MAP_MODE_UNSPECIFIED = 0;
+  MAP_MODE_MARKERS = 1;
+  MAP_MODE_ITINERARY = 2;
+}
+
+enum MapTravelMode {
+  MAP_TRAVEL_MODE_UNSPECIFIED = 0;
+  MAP_TRAVEL_MODE_DRIVING = 1;
+  MAP_TRAVEL_MODE_WALKING = 2;
+  MAP_TRAVEL_MODE_TRANSIT = 3;
+  MAP_TRAVEL_MODE_BICYCLING = 4;
+}
+
+enum MemoryOpKind {
+  MEMORY_OP_KIND_UNSPECIFIED = 0;
+  MEMORY_OP_KIND_READ = 1;
+  MEMORY_OP_KIND_WRITE = 2;
+  MEMORY_OP_KIND_LIST = 3;
+  MEMORY_OP_KIND_SEARCH = 4;
+  MEMORY_OP_KIND_DELETE = 5;
+  MEMORY_OP_KIND_STR_REPLACE = 6;
+  MEMORY_OP_KIND_APPEND = 7;
+}
+
+enum WeatherCondition {
+  WEATHER_CONDITION_UNSPECIFIED = 0;
+  WEATHER_CONDITION_CLEAR = 1;
+  WEATHER_CONDITION_PARTLY_CLOUDY = 2;
+  WEATHER_CONDITION_CLOUDY = 3;
+  WEATHER_CONDITION_OVERCAST = 4;
+  WEATHER_CONDITION_FOG = 5;
+  WEATHER_CONDITION_DRIZZLE = 6;
+  WEATHER_CONDITION_RAIN = 7;
+  WEATHER_CONDITION_HEAVY_RAIN = 8;
+  WEATHER_CONDITION_THUNDERSTORM = 9;
+  WEATHER_CONDITION_SNOW = 10;
+  WEATHER_CONDITION_SLEET = 11;
+  WEATHER_CONDITION_HAIL = 12;
+  WEATHER_CONDITION_WIND = 13;
+}
+
+enum WeatherPrecipitationType {
+  WEATHER_PRECIPITATION_TYPE_UNSPECIFIED = 0;
+  WEATHER_PRECIPITATION_TYPE_RAIN = 1;
+  WEATHER_PRECIPITATION_TYPE_SNOW = 2;
+  WEATHER_PRECIPITATION_TYPE_SLEET = 3;
+  WEATHER_PRECIPITATION_TYPE_HAIL = 4;
+}
+
+enum SportsDisplayType {
+  SPORTS_DISPLAY_TYPE_UNSPECIFIED = 0;
+  SPORTS_DISPLAY_TYPE_SCORES = 1;
+  SPORTS_DISPLAY_TYPE_STANDINGS = 2;
+  SPORTS_DISPLAY_TYPE_GAME_STATS = 3;
+}
+
+enum ProductCardsLayout {
+  PRODUCT_CARDS_LAYOUT_UNSPECIFIED = 0;
+  PRODUCT_CARDS_LAYOUT_COMPARISON = 1;
+  PRODUCT_CARDS_LAYOUT_FEATURED = 2;
+  PRODUCT_CARDS_LAYOUT_CAROUSEL = 3;
+}
+
+enum ItemListCardLayout {
+  ITEM_LIST_CARD_LAYOUT_UNSPECIFIED = 0;
+  ITEM_LIST_CARD_LAYOUT_OPTIONS = 1;
+  ITEM_LIST_CARD_LAYOUT_STEPS = 2;
+  ITEM_LIST_CARD_LAYOUT_PLACES = 3;
+  ITEM_LIST_CARD_LAYOUT_PROMPTS = 4;
+}
+
+enum ItemListCardView {
+  ITEM_LIST_CARD_VIEW_UNSPECIFIED = 0;
+  ITEM_LIST_CARD_VIEW_STEPPER = 1;
+  ITEM_LIST_CARD_VIEW_LIST = 2;
+}
+
+enum MessageComposeKind {
+  MESSAGE_COMPOSE_KIND_UNSPECIFIED = 0;
+  MESSAGE_COMPOSE_KIND_EMAIL = 1;
+  MESSAGE_COMPOSE_KIND_TEXT_MESSAGE = 2;
+  MESSAGE_COMPOSE_KIND_OTHER = 3;
+}
+
+enum RecommendedAppId {
+  RECOMMENDED_APP_ID_UNSPECIFIED = 0;
+  RECOMMENDED_APP_ID_DESKTOP = 1;
+  RECOMMENDED_APP_ID_COWORK = 2;
+  RECOMMENDED_APP_ID_IOS = 3;
+  RECOMMENDED_APP_ID_ANDROID = 4;
+  RECOMMENDED_APP_ID_CLAUDE_CODE_TERMINAL = 5;
+  RECOMMENDED_APP_ID_CLAUDE_CODE_VSCODE = 6;
+  RECOMMENDED_APP_ID_CLAUDE_CODE_JETBRAINS = 7;
+  RECOMMENDED_APP_ID_CLAUDE_CODE_DESKTOP = 8;
+  RECOMMENDED_APP_ID_EXCEL = 9;
+  RECOMMENDED_APP_ID_POWERPOINT = 10;
+  RECOMMENDED_APP_ID_WORD = 11;
+  RECOMMENDED_APP_ID_OUTLOOK = 12;
+  RECOMMENDED_APP_ID_CHROME = 13;
+  RECOMMENDED_APP_ID_CLAUDE_DESIGN = 14;
+}
+
+enum ResearchStatus {
+  RESEARCH_STATUS_UNSPECIFIED = 0;
+  RESEARCH_STATUS_STARTING = 1;
+  RESEARCH_STATUS_PLANNING = 2;
+  RESEARCH_STATUS_SEARCHING = 3;
+  RESEARCH_STATUS_CREATING = 4;
+  RESEARCH_STATUS_COMPLETED = 5;
+  RESEARCH_STATUS_FAILED = 6;
+  RESEARCH_STATUS_CANCELLED = 7;
+  RESEARCH_STATUS_INITIATING_AGENTS = 8;
+  RESEARCH_STATUS_TIMED_OUT = 9;
+}
+
+enum GroupStyle {
+  GROUP_STYLE_UNSPECIFIED = 0;
+  GROUP_STYLE_INLINE = 1;
+  GROUP_STYLE_TIMELINE = 2;
+}
+
+enum NarrationFold {
+  NARRATION_FOLD_UNSPECIFIED = 0;
+  NARRATION_FOLD_PENDING = 1;
+  NARRATION_FOLD_FOLDED = 2;
+  NARRATION_FOLD_SHOWN = 3;
+}
+
+enum ClientToolConsent {
+  CLIENT_TOOL_CONSENT_UNSPECIFIED = 0;
+  CLIENT_TOOL_CONSENT_SERVER_RESOLVED = 1;
+  CLIENT_TOOL_CONSENT_STANDING_GRANT = 2;
+}
+
+enum RecordedDemonstrationStepKind {
+  RECORDED_DEMONSTRATION_STEP_KIND_UNSPECIFIED = 0;
+  RECORDED_DEMONSTRATION_STEP_KIND_ACTION = 1;
+  RECORDED_DEMONSTRATION_STEP_KIND_SCREEN_FRAME = 2;
+  RECORDED_DEMONSTRATION_STEP_KIND_SCREEN_REGION = 3;
+}
+
+enum PlanTipFeature {
+  PLAN_TIP_FEATURE_UNSPECIFIED = 0;
+  PLAN_TIP_FEATURE_SCHEDULED_TASKS = 1;
+  PLAN_TIP_FEATURE_BROWSER_USE = 2;
+  PLAN_TIP_FEATURE_COMPUTER_USE = 3;
+  PLAN_TIP_FEATURE_REMOTE_CONTROL = 4;
+  PLAN_TIP_FEATURE_LOCAL_FOLDERS = 5;
+  PLAN_TIP_FEATURE_RESEARCH = 6;
+}
+
+enum ToolRunState {
+  TOOL_RUN_STATE_UNSPECIFIED = 0;
+  TOOL_RUN_STATE_WORKING = 1;
+  TOOL_RUN_STATE_SETTLED = 2;
+  TOOL_RUN_STATE_FAILED = 3;
+  TOOL_RUN_STATE_CANCELLED = 4;
+}
+
+enum StructuredCardConnectorSetup {
+  STRUCTURED_CARD_CONNECTOR_SETUP_UNSPECIFIED = 0;
+  STRUCTURED_CARD_CONNECTOR_SETUP_NEEDED = 1;
+  STRUCTURED_CARD_CONNECTOR_SETUP_STARTED = 2;
+}
+
+message TextFormat {
+  enum Style {
+    STYLE_UNSPECIFIED = 0;
+    STYLE_PLAIN = 1;
+    STYLE_MARKDOWN = 2;
+    STYLE_CODE = 3;
+  }
+  anthropic.bard.api.v1alpha.TextFormat.Style style = 1;
+  string language = 2;
+}
+
+message ThinkingSummary {
+  string summary = 1;
+}
+
+message ThinkingDisplay {
+  google.protobuf.Timestamp started_at = 1;
+  google.protobuf.Timestamp completed_at = 2;
+  optional int32 estimated_tokens = 3;
+}
+
+message WorkspaceSetupDisplay {
+}
+
+message ContentBlock {
+  string id = 1;
+  string display_group_id = 2;
+  int32 index = 3;
+  bool is_complete = 4;
+  string title = 5;
+  string title_verb = 34;
+  string title_object = 36;
+  anthropic.bard.api.v1alpha.Icon icon = 7;
+  anthropic.bard.api.v1alpha.ContentBlockState state = 8;
+  anthropic.bard.api.v1alpha.CancelReason cancel_reason = 33;
+  string status_text = 39;
+  anthropic.bard.api.v1alpha.TitleSource title_source = 23;
+  string text = 9;
+  anthropic.bard.api.v1alpha.TextFormat text_format = 10;
+  anthropic.bard.api.v1alpha.NarrationFold narration_fold = 24;
+  repeated anthropic.bard.api.v1alpha.Citation citations = 11;
+  repeated anthropic.bard.api.v1alpha.ChatLinkReference chat_link_references = 38;
+  repeated anthropic.bard.api.v1alpha.ThinkingSummary summaries = 12;
+  anthropic.bard.api.v1alpha.ToolDisplayContent display_content = 13;
+  anthropic.bard.api.v1alpha.ToolDisplayContent input_display = 25;
+  string run_anchor_group_id = 26;
+  string signature = 14;
+  string tool_display_name = 15;
+  string input_summary = 16;
+  anthropic.bard.api.v1alpha.ToolRowKind row_kind = 28;
+  string analytics_tool_name = 40;
+  anthropic.bard.api.v1alpha.ToolRowFileLocation file_location = 37;
+  anthropic.bard.api.v1alpha.InputSummaryKind input_summary_kind = 29;
+  anthropic.bard.api.v1alpha.InputVisibility input_visibility = 35;
+  optional string tool_use_id = 41;
+  repeated anthropic.bard.api.v1alpha.SafetyBanner safety_banners = 18;
+  repeated google.protobuf.Any extras = 17;
+  bool is_truncated = 19;
+  repeated anthropic.bard.api.v1alpha.DisplayImage result_images = 20;
+  anthropic.bard.api.v1alpha.ThinkingDisplay thinking_display = 21;
+  anthropic.bard.api.v1alpha.WorkspaceSetupDisplay workspace_setup_display = 22;
+  anthropic.bard.api.v1alpha.McpAppDisplay linked_computer_mcp_app = 45;
+  anthropic.bard.api.v1alpha.RecordedDemonstrationDisplay recorded_demonstration_display = 31;
+  bool command_output = 42;
+  bool input_incomplete = 27;
+  repeated anthropic.bard.api.v1alpha.BlockAction actions = 30;
+}
+
+message BlockAction {
+  string action_id = 1;
+  string label = 2;
+  anthropic.bard.api.v1alpha.BlockActionKind kind = 3;
+  anthropic.bard.api.v1alpha.BlockActionState state = 4;
+  optional uint32 target_index = 5;
+}
+
+message ToolDisplayContent {
+  oneof content {
+    anthropic.bard.api.v1alpha.RichItemList rich_items = 4;
+    anthropic.bard.api.v1alpha.StructuredCard structured_card = 5;
+    anthropic.bard.api.v1alpha.MapDisplay map = 6;
+    anthropic.bard.api.v1alpha.ImageGalleryDisplay image_gallery = 8;
+    anthropic.bard.api.v1alpha.ResearchDisplay research = 9;
+    anthropic.bard.api.v1alpha.FileDisplay file = 11;
+    anthropic.bard.api.v1alpha.ClientToolCall client_tool = 12;
+    anthropic.bard.api.v1alpha.WeatherDisplay weather = 13;
+    anthropic.bard.api.v1alpha.SportsDisplay sports = 14;
+    anthropic.bard.api.v1alpha.PlaceListDisplay place_list = 15;
+    anthropic.bard.api.v1alpha.ProductCardsDisplay product_cards = 16;
+    anthropic.bard.api.v1alpha.ItemListCardDisplay item_list_card = 17;
+    anthropic.bard.api.v1alpha.ItineraryDisplay itinerary = 18;
+    anthropic.bard.api.v1alpha.MessageComposeDisplay message_compose = 19;
+    anthropic.bard.api.v1alpha.BrowserTakeoverDisplay browser_takeover = 20;
+    anthropic.bard.api.v1alpha.AppRecommendationsDisplay app_recommendations = 21;
+    anthropic.bard.api.v1alpha.RecipeDisplay recipe = 22;
+    anthropic.bard.api.v1alpha.QuizDisplay quiz = 32;
+    anthropic.bard.api.v1alpha.TranslationDisplay translation = 33;
+    anthropic.bard.api.v1alpha.ChartDisplay chart_card = 34;
+    anthropic.bard.api.v1alpha.FileDiff file_diff = 23;
+    anthropic.bard.api.v1alpha.TodoList todo_list = 24;
+    anthropic.bard.api.v1alpha.AgentProgress agent_progress = 25;
+    anthropic.bard.api.v1alpha.MultiFileDisplay multi_file = 27;
+    anthropic.bard.api.v1alpha.McpAppDisplay mcp_app = 26;
+    anthropic.bard.api.v1alpha.LabelValueTable table = 28;
+    anthropic.bard.api.v1alpha.QuestionAnswers question_answers = 29;
+    anthropic.bard.api.v1alpha.MemoryDisplay memory = 30;
+    anthropic.bard.api.v1alpha.SkillProposalsDisplay skill_proposals = 31;
+    anthropic.bard.api.v1alpha.ConnectorSuggestionsDisplay connector_suggestions = 35;
+    anthropic.bard.api.v1alpha.SkillSuggestionsDisplay skill_suggestions = 36;
+    anthropic.bard.api.v1alpha.PluginSuggestionsDisplay plugin_suggestions = 40;
+    anthropic.bard.api.v1alpha.ImageAnnotationDisplay image_annotation = 38;
+    anthropic.bard.api.v1alpha.PlanTipDisplay plan_tip = 39;
+    anthropic.bard.api.v1alpha.NextStepOfferDisplay next_step_offer = 41;
+    anthropic.bard.api.v1alpha.CodeReviewFindings review_findings = 42;
+  }
+}
+
+message RichItemList {
+  repeated anthropic.bard.api.v1alpha.RichItem items = 1;
+  bool is_trusted = 2;
+  anthropic.bard.api.v1alpha.RichItemListLayout layout = 3;
+}
+
+message RichItem {
+  string title = 1;
+  repeated string subtitles = 2;
+  string url = 3;
+  string resource_type = 4;
+  string icon_url = 5;
+  string source = 6;
+  anthropic.bard.api.v1alpha.LinkedChat linked_chat = 7;
+}
+
+message StructuredCard {
+  string title = 1;
+  string subtitle = 2;
+  optional anthropic.bard.api.v1alpha.StructuredCardLink link = 3;
+  bool has_partial_error = 4;
+  repeated anthropic.bard.api.v1alpha.StructuredCardResource resources = 5;
+  optional anthropic.bard.api.v1alpha.StructuredCardConnector connector = 6;
+  anthropic.bard.api.v1alpha.StructuredCardConnectorSetup connector_setup = 7;
+}
+
+message StructuredCardConnector {
+  string server_url = 1;
+  string server_uuid = 2;
+}
+
+message StructuredCardLink {
+  string label = 1;
+  string url = 2;
+}
+
+message StructuredCardResource {
+  anthropic.bard.api.v1alpha.StructuredCardResourceKind kind = 1;
+  string id = 2;
+  optional string name = 3;
+  optional bool created = 4;
+  optional string owner_email = 5;
+  optional bool shared_drive = 6;
+  optional bool owned_by_account = 7;
+  optional string display_when = 8;
+  optional string time_zone = 9;
+}
+
+message MapDisplay {
+  repeated anthropic.bard.api.v1alpha.MapMarker markers = 1;
+  double center_latitude = 2;
+  double center_longitude = 3;
+  double span_latitude_delta = 4;
+  double span_longitude_delta = 5;
+  repeated anthropic.bard.api.v1alpha.MapItineraryDay days = 6;
+  string title = 7;
+  string narrative = 8;
+  anthropic.bard.api.v1alpha.MapMode mode = 9;
+  anthropic.bard.api.v1alpha.MapTravelMode travel_mode = 10;
+  optional bool show_route = 11;
+  map<string, anthropic.bard.api.v1alpha.Place> enriched_places = 12;
+}
+
+message MapMarker {
+  string title = 1;
+  string subtitle = 2;
+  double latitude = 3;
+  double longitude = 4;
+  string place_id = 5;
+  string notes = 6;
+  string arrival_time = 7;
+  google.protobuf.Duration duration = 8;
+  string address = 9;
+}
+
+message MapItineraryDay {
+  int32 day_number = 1;
+  string title = 2;
+  string narrative = 3;
+  repeated anthropic.bard.api.v1alpha.MapMarker locations = 4;
+}
+
+message ClientToolCall {
+  string tool_name = 1;
+  string input_json = 2;
+  string tool_use_id = 4;
+  string result_json = 3;
+  string origin_session_id = 5;
+  int64 origin_version = 6;
+  anthropic.bard.api.v1alpha.ClientToolConsent consent = 7;
+}
+
+message McpAppDisplay {
+  string tool_name = 1;
+  string input_json = 2;
+  string result_json = 3;
+  string structured_content_json = 4;
+  optional string server_name = 5;
+  optional string tool_use_id = 6;
+  optional string tool_origin = 7;
+  string result_meta_json = 8;
+  optional string integration_name = 9;
+  optional string integration_icon_url = 10;
+  repeated string loading_messages = 11;
+  optional string mcp_tool_name = 12;
+  string partial_input = 13;
+  optional string connector_id = 14;
+}
+
+message MemoryDisplay {
+  anthropic.bard.api.v1alpha.MemoryOpKind kind = 1;
+  repeated string path_segments = 2;
+  string excerpt = 3;
+  repeated anthropic.bard.api.v1alpha.MemoryDocumentDisplay documents = 4;
+  anthropic.bard.api.v1alpha.MemoryTargetDisplay target = 5;
+  repeated string display_path_segments = 6;
+}
+
+message MemoryDocumentDisplay {
+  string path = 1;
+  repeated string path_segments = 2;
+  repeated string display_path_segments = 6;
+  string version = 3;
+  google.protobuf.Timestamp updated_at = 4;
+  anthropic.bard.api.v1alpha.MemoryParsedContentDisplay parsed = 5;
+  string memory_id = 7;
+}
+
+message MemoryParsedContentDisplay {
+  optional string name = 1;
+  optional string description = 2;
+  string body = 4;
+  repeated string wikilinks = 5;
+  repeated anthropic.bard.api.v1alpha.MemoryWikilinkRefDisplay wikilink_refs = 6;
+  bool body_has_rewritten_wikilinks = 7;
+}
+
+message MemoryWikilinkRefDisplay {
+  string text = 1;
+  optional string resolved_path = 2;
+}
+
+message MemoryTargetDisplay {
+  optional string file_path = 1;
+  bool files_list = 2;
+}
+
+message DisplayImage {
+  string url = 1;
+  string title = 2;
+  repeated anthropic.bard.api.v1alpha.DisplayImageAttribution attributions = 3;
+  string thumbnail_url = 4;
+  string telemetry = 5;
+}
+
+message DisplayImageAttribution {
+  string display_name = 1;
+  string uri = 2;
+  string photo_uri = 3;
+}
+
+message Place {
+  string place_id = 1;
+  string name = 2;
+  string address = 3;
+  double latitude = 4;
+  double longitude = 5;
+  double rating = 6;
+  int32 rating_count = 7;
+  repeated string types = 8;
+  repeated string weekday_hours = 9;
+  int32 price_level = 10;
+  string phone_number = 11;
+  string website_url = 12;
+  string maps_url = 13;
+  repeated anthropic.bard.api.v1alpha.DisplayImage photos = 14;
+  string type_label = 15;
+}
+
+message WeatherDisplay {
+  string location = 1;
+  string country = 2;
+  anthropic.bard.api.v1alpha.WeatherCurrent current = 3;
+  repeated anthropic.bard.api.v1alpha.WeatherDay daily = 4;
+}
+
+message WeatherCurrent {
+  double temperature = 1;
+  anthropic.bard.api.v1alpha.WeatherCondition condition = 2;
+  string condition_text = 3;
+  bool is_day = 4;
+}
+
+message CivilDate {
+  int32 year = 1;
+  int32 month = 2;
+  int32 day = 3;
+}
+
+message WeatherDay {
+  anthropic.bard.api.v1alpha.CivilDate date = 1;
+  string day_of_week = 2;
+  double high = 3;
+  int32 precipitation_chance = 4;
+  anthropic.bard.api.v1alpha.WeatherPrecipitationType precipitation_type = 5;
+}
+
+message SportsDisplay {
+  anthropic.bard.api.v1alpha.SportsDisplayType display_type = 1;
+  string league = 2;
+  string title = 3;
+  repeated anthropic.bard.api.v1alpha.SportsGame games = 4;
+  repeated anthropic.bard.api.v1alpha.SportsStandingsRow standings = 5;
+}
+
+message SportsGame {
+  string id = 1;
+  string status = 2;
+  google.protobuf.Timestamp start_time = 3;
+  string local_start = 4;
+  repeated anthropic.bard.api.v1alpha.SportsTeam teams = 5;
+  double draw_probability = 6;
+}
+
+message SportsTeam {
+  string abbreviation = 1;
+  string name = 2;
+  int32 score = 3;
+  double win_probability = 4;
+  bool is_home = 5;
+}
+
+message SportsStandingsRow {
+  int32 rank = 1;
+  string team = 2;
+  repeated anthropic.bard.api.v1alpha.SportsStat stats = 3;
+}
+
+message SportsStat {
+  string label = 1;
+  string value = 2;
+}
+
+message PlaceListDisplay {
+  repeated anthropic.bard.api.v1alpha.Place places = 1;
+}
+
+message ProductCardsDisplay {
+  anthropic.bard.api.v1alpha.ProductCardsLayout layout = 1;
+  repeated anthropic.bard.api.v1alpha.ProductCard products = 2;
+  string summary = 3;
+}
+
+message ProductCard {
+  string name = 1;
+  string price = 2;
+  string blurb = 3;
+  string url = 4;
+  repeated anthropic.bard.api.v1alpha.ProductAttribute attributes = 5;
+  repeated anthropic.bard.api.v1alpha.DisplayImage images = 6;
+}
+
+message ProductAttribute {
+  string label = 1;
+  oneof value {
+    string text_value = 2;
+    bool flag_value = 3;
+  }
+}
+
+message ItemListCardDisplay {
+  anthropic.bard.api.v1alpha.ItemListCardLayout layout = 1;
+  string title = 2;
+  repeated anthropic.bard.api.v1alpha.ItemListCardItem items = 3;
+  anthropic.bard.api.v1alpha.ItemListCardView view = 4;
+  string summary = 5;
+  anthropic.bard.api.v1alpha.ItemListCardStyle style = 6;
+}
+
+message ItemListCardItem {
+  string title = 1;
+  string description = 2;
+  repeated anthropic.bard.api.v1alpha.ItemListCardBullet bullets = 3;
+  repeated anthropic.bard.api.v1alpha.DisplayImage images = 4;
+  anthropic.bard.api.v1alpha.PromptSuggestion prompt = 5;
+  anthropic.bard.api.v1alpha.ItemListCardIllustration illustration = 6;
+}
+
+message ItemListCardBullet {
+  string text = 1;
+}
+
+message PromptSuggestion {
+  string text = 1;
+}
+
+message ItineraryDisplay {
+  string title = 1;
+  repeated anthropic.bard.api.v1alpha.ItineraryDay days = 2;
+  string summary = 3;
+}
+
+message ItineraryDay {
+  string day_label = 1;
+  repeated anthropic.bard.api.v1alpha.ItineraryStop stops = 2;
+}
+
+message ItineraryStop {
+  string name = 1;
+  string time = 2;
+  string blurb = 3;
+}
+
+message MessageComposeDisplay {
+  anthropic.bard.api.v1alpha.MessageComposeKind kind = 1;
+  string summary_title = 2;
+  repeated anthropic.bard.api.v1alpha.MessageComposeVariant variants = 3;
+}
+
+message MessageComposeVariant {
+  string label = 1;
+  string subject = 2;
+  string body = 3;
+}
+
+message BrowserTakeoverDisplay {
+  string progress_summary = 1;
+  string user_instructions = 2;
+  string takeover_path = 3;
+  google.protobuf.Timestamp expires_at = 4;
+}
+
+message AppRecommendationsDisplay {
+  repeated anthropic.bard.api.v1alpha.RecommendedApp apps = 1;
+}
+
+message RecommendedApp {
+  anthropic.bard.api.v1alpha.RecommendedAppId app_id = 1;
+  string value_prop = 2;
+}
+
+message RecipeDisplay {
+  string title = 1;
+  string description = 2;
+  int32 base_servings = 3;
+  repeated anthropic.bard.api.v1alpha.RecipeIngredient ingredients = 4;
+  repeated anthropic.bard.api.v1alpha.RecipeStep steps = 5;
+  string notes = 6;
+  repeated anthropic.bard.api.v1alpha.DisplayImage images = 7;
+}
+
+message RecipeIngredient {
+  string id = 1;
+  string name = 2;
+  double amount = 3;
+  string unit = 4;
+  anthropic.bard.api.v1alpha.RecipeIngredientAmount metric = 5;
+  anthropic.bard.api.v1alpha.RecipeIngredientAmount us = 6;
+}
+
+message RecipeIngredientAmount {
+  double amount = 1;
+  string unit = 2;
+}
+
+message RecipeStep {
+  string id = 1;
+  string title = 2;
+  string content = 3;
+  google.protobuf.Duration timer = 4;
+}
+
+message ImageGalleryDisplay {
+  repeated anthropic.bard.api.v1alpha.ImageGalleryItem images = 1;
+  bool is_expired = 2;
+}
+
+message ImageGalleryItem {
+  string id = 1;
+  string url = 2;
+  string thumbnail_url = 3;
+  string title = 4;
+  string source = 5;
+  string page_url = 6;
+  int32 width = 7;
+  int32 height = 8;
+  int32 thumbnail_width = 9;
+  int32 thumbnail_height = 10;
+  string telemetry = 11;
+}
+
+message ResearchDisplay {
+  anthropic.bard.api.v1alpha.ResearchStatus status = 1;
+  string headline = 2;
+  int32 total_sources = 3;
+  repeated anthropic.bard.api.v1alpha.ResearchAgent agents = 4;
+  string task_id = 5;
+  google.protobuf.Timestamp started_at = 6;
+  google.protobuf.Timestamp completed_at = 7;
+  google.protobuf.Timestamp finished_at = 8;
+  repeated string top_icon_urls = 9;
+  repeated anthropic.bard.api.v1alpha.SourceDomainFrequency top_source_domains = 10;
+}
+
+message SourceDomainFrequency {
+  string name = 1;
+  string icon_url = 2;
+  int32 count = 3;
+}
+
+message ResearchAgent {
+  string description = 1;
+  int32 total_sources = 2;
+  repeated string top_icon_urls = 3;
+  google.protobuf.Timestamp started_at = 4;
+  google.protobuf.Timestamp completed_at = 5;
+}
+
+message BuiltinIcon {
+  anthropic.bard.api.v1alpha.BuiltinIconType type = 1;
+}
+
+message RemoteIcon {
+  string url = 1;
+  optional string dark_mode_url = 2;
+}
+
+message Icon {
+  oneof icon {
+    anthropic.bard.api.v1alpha.BuiltinIcon builtin = 1;
+    anthropic.bard.api.v1alpha.RemoteIcon remote = 2;
+  }
+}
+
+message DisplayGroup {
+  string id = 1;
+  string message_id = 2;
+  int32 index = 3;
+  anthropic.bard.api.v1alpha.GroupStyle style = 4;
+  string summary = 5;
+  bool is_complete = 6;
+  anthropic.bard.api.v1alpha.Icon icon = 7;
+  repeated google.protobuf.Any extras = 8;
+  string task_id = 16;
+  anthropic.bard.api.v1alpha.CollapsedGroupMeta collapsed_meta = 9;
+  string summary_sentence = 10;
+  string run_anchor_group_id = 12;
+  anthropic.bard.api.v1alpha.ToolRunState run_state = 13;
+  anthropic.bard.api.v1alpha.TitleSource summary_source = 15;
+  string inline_comparison_id = 14;
+  optional string status_text = 17;
+  optional string status_text_lead = 18;
+  optional string summary_language = 19;
+}
+
+message Citation {
+  string uuid = 1;
+  optional string title = 2;
+  optional string url = 3;
+  optional int32 start_index = 4;
+  optional int32 end_index = 5;
+  repeated anthropic.bard.api.v1alpha.CitationSource sources = 6;
+  bool is_trusted = 7;
+  oneof metadata {
+    anthropic.bard.api.v1alpha.CitationGenericMetadata generic_metadata = 8;
+    anthropic.bard.api.v1alpha.CitationGoogleDocMetadata google_doc_metadata = 9;
+    anthropic.bard.api.v1alpha.CitationWebpageMetadata webpage_metadata = 10;
+  }
+}
+
+message CitationGenericMetadata {
+  string uuid = 1;
+  optional string preview_title = 2;
+  optional string icon_url = 3;
+  optional string source = 4;
+}
+
+message CitationGoogleDocMetadata {
+  string doc_uuid = 1;
+  optional string owner = 2;
+  optional string uri = 3;
+  optional string created_time = 4;
+  optional string last_modified_by = 5;
+  optional string last_modified_time = 6;
+  optional string mime_type = 7;
+}
+
+message CitationWebpageMetadata {
+  string site_domain = 1;
+  optional string favicon_url = 2;
+  optional string site_name = 3;
+}
+
+message CitationSource {
+  string uuid = 1;
+  optional string title = 2;
+  optional string url = 3;
+  optional string icon_url = 4;
+  optional string source = 5;
+}
+
+message SafetyBanner {
+  string flag = 1;
+  optional anthropic.bard.api.v1alpha.Helpline helpline = 2;
+}
+
+message Helpline {
+  string id = 1;
+  string name = 2;
+  optional string phone_number = 3;
+  optional string sms_number = 4;
+  optional string web_chat_url = 5;
+  optional string url = 6;
+}
+
+message QuestionAnswers {
+  message Option {
+    string label = 1;
+    string description = 2;
+  }
+  message QuestionAnswer {
+    string text = 1;
+    string header = 2;
+    repeated anthropic.bard.api.v1alpha.QuestionAnswers.Option options = 3;
+    bool multi_select = 4;
+    repeated string picked = 5;
+    string typed_text = 6;
+    bool no_answer = 7;
+  }
+  repeated anthropic.bard.api.v1alpha.QuestionAnswers.QuestionAnswer items = 1;
+}
+
+message ConnectorSuggestionsDisplay {
+  message Connector {
+    string name = 1;
+    string description = 2;
+    string url = 3;
+    string icon_url = 4;
+    optional string directory_uuid = 5;
+    optional string installed_server_id = 6;
+  }
+  repeated anthropic.bard.api.v1alpha.ConnectorSuggestionsDisplay.Connector connectors = 1;
+}
+
+message RecordedDemonstrationDisplay {
+  google.protobuf.Duration duration = 1;
+  int32 recorded_image_count = 2;
+  string lead_text = 3;
+  repeated anthropic.bard.api.v1alpha.RecordedDemonstrationStep steps = 4;
+  string caption = 5;
+  string narration = 6;
+}
+
+message RecordedDemonstrationStep {
+  google.protobuf.Duration offset = 1;
+  anthropic.bard.api.v1alpha.RecordedDemonstrationStepKind kind = 2;
+  string text = 3;
+  string attachment_id = 4;
+}
+
+message PlanTipDisplay {
+  anthropic.bard.api.v1alpha.PlanTipFeature feature = 1;
+  string title = 2;
+  string fallback_label = 3;
+}
+
+message LinkedChat {
+  google.protobuf.Timestamp updated_at = 1;
+  string summary_line = 2;
+  anthropic.bard.api.v1alpha.LatestAssistantOutputKind latest_assistant_output_kind = 3;
+  google.protobuf.Timestamp latest_assistant_output_at = 4;
+}
+
+message ChatLinkReference {
+  int32 start_index = 1;
+  int32 end_index = 2;
+  string conversation_id = 3;
+  string title = 4;
+  anthropic.bard.api.v1alpha.LinkedChat linked_chat = 5;
+}

@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package anthropic.bard.api.v1alpha;
+
+import "google/protobuf/timestamp.proto";
+
+message ExternalReplyProgress {
+  enum Phase {
+    PHASE_UNSPECIFIED = 0;
+    PHASE_STARTED = 1;
+    PHASE_STREAMING = 2;
+    PHASE_GENERATED = 3;
+    PHASE_INTERRUPTED = 4;
+    PHASE_DISCARDED = 5;
+    PHASE_SETTLED = 6;
+  }
+  message TextBlock {
+    uint32 index = 1;
+    string text = 2;
+  }
+  string assistant_message_uuid = 1;
+  string human_message_uuid = 2;
+  uint64 seq = 3;
+  anthropic.bard.api.v1alpha.ExternalReplyProgress.Phase phase = 4;
+  string persisted_message_uuid = 5;
+  repeated anthropic.bard.api.v1alpha.ExternalReplyProgress.TextBlock blocks = 6;
+  google.protobuf.Timestamp sent_at = 7;
+}

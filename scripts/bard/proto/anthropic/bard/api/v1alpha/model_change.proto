@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package anthropic.bard.api.v1alpha;
+
+message ModelChange {
+  string assistant_message_id = 1;
+  anthropic.bard.api.v1alpha.ModelSelection requested = 2;
+  anthropic.bard.api.v1alpha.ModelSelection updated = 3;
+}
+
+message ModelSelection {
+  string model = 1;
+  string effort = 2;
+  string thinking_mode = 3;
+}

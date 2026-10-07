@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package anthropic.bard.api.v1alpha;
+
+import "anthropic/bard/api/v1alpha/conversation.proto";
+
+enum SendIdentitySlot {
+  SEND_IDENTITY_SLOT_UNSPECIFIED = 0;
+  SEND_IDENTITY_SLOT_MUTATION_SESSION = 1;
+  SEND_IDENTITY_SLOT_MUTATION_VERSION = 2;
+}
+
+message PrepareSendRequest {
+  string conversation_id = 1;
+  string message_id = 2;
+  optional string assistant_message_id = 3;
+  anthropic.bard.api.v1alpha.InputMode input_mode = 4;
+  optional string mutation_session_id = 5;
+}
+
+message PrepareSendResponse {
+  string message_event_id = 1;
+  string model_fallback_event_id = 2;
+  string thinking_event_id = 3;
+  repeated anthropic.bard.api.v1alpha.SendIdentityField identity_fields = 4;
+}
+
+message SendIdentityField {
+  string name = 1;
+  oneof content {
+    string value = 2;
+    anthropic.bard.api.v1alpha.SendIdentitySlot slot = 3;
+    anthropic.bard.api.v1alpha.SendIdentityObject object = 4;
+  }
+}
+
+message SendIdentityObject {
+  repeated anthropic.bard.api.v1alpha.SendIdentityField fields = 1;
+}

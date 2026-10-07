@@ -1,0 +1,104 @@
+syntax = "proto3";
+
+package anthropic.bard.api.v1alpha;
+
+import "anthropic/bard/api/v1alpha/icon.proto";
+import "anthropic/bard/api/v1alpha/icon_tint.proto";
+
+enum PublishedArtifactAction {
+  PUBLISHED_ARTIFACT_ACTION_UNSPECIFIED = 0;
+  PUBLISHED_ARTIFACT_ACTION_PUBLISHED = 1;
+  PUBLISHED_ARTIFACT_ACTION_UPDATED = 2;
+  PUBLISHED_ARTIFACT_ACTION_OPENED = 3;
+  PUBLISHED_ARTIFACT_ACTION_PINNED = 4;
+  PUBLISHED_ARTIFACT_ACTION_UNPINNED = 5;
+  PUBLISHED_ARTIFACT_ACTION_READ = 6;
+}
+
+enum SandboxFileAvailability {
+  SANDBOX_FILE_AVAILABILITY_UNSPECIFIED = 0;
+  SANDBOX_FILE_AVAILABILITY_AVAILABLE = 1;
+  SANDBOX_FILE_AVAILABILITY_REMOVED = 2;
+  SANDBOX_FILE_AVAILABILITY_SUPERSEDED = 3;
+}
+
+enum ArtifactAutoOpen {
+  ARTIFACT_AUTO_OPEN_UNSPECIFIED = 0;
+  ARTIFACT_AUTO_OPEN_HELD = 1;
+  ARTIFACT_AUTO_OPEN_RELEASED = 2;
+}
+
+enum DeliveryRole {
+  DELIVERY_ROLE_UNSPECIFIED = 0;
+  DELIVERY_ROLE_SAVED = 1;
+  DELIVERY_ROLE_PRESENTED = 2;
+  DELIVERY_ROLE_USER_UPLOAD = 3;
+}
+
+enum CustomizationKind {
+  CUSTOMIZATION_KIND_UNSPECIFIED = 0;
+  CUSTOMIZATION_KIND_SKILL = 1;
+  CUSTOMIZATION_KIND_PLUGIN = 2;
+}
+
+enum FileCommand {
+  FILE_COMMAND_UNSPECIFIED = 0;
+  FILE_COMMAND_CREATE = 1;
+  FILE_COMMAND_REWRITE = 2;
+  FILE_COMMAND_UPDATE = 3;
+}
+
+enum PresentationKind {
+  PRESENTATION_KIND_UNSPECIFIED = 0;
+  PRESENTATION_KIND_FIRST = 1;
+  PRESENTATION_KIND_REPEAT = 2;
+  PRESENTATION_KIND_RESENT = 3;
+}
+
+message MultiFileDisplay {
+  repeated anthropic.bard.api.v1alpha.FileDisplay files = 1;
+}
+
+message FileDisplay {
+  message InlineSnapshot {
+  }
+  string file_id = 1;
+  string artifact_version_uuid = 2;
+  optional string title = 3;
+  string file_type = 4;
+  anthropic.bard.api.v1alpha.FileCommand command = 6;
+  optional string message_uuid = 7;
+  optional int32 version_number = 25;
+  optional string published_url = 8;
+  optional string published_artifact_id = 14;
+  optional bool owned_by_account = 23;
+  string sandbox_path = 9;
+  string download_url = 10;
+  string attachment_id = 11;
+  anthropic.bard.api.v1alpha.DeliveryRole delivery_role = 12;
+  string session_path = 24;
+  string workspace_path = 15;
+  bool artifact_publishable = 16;
+  anthropic.bard.api.v1alpha.CustomizationKind customization_kind = 17;
+  anthropic.bard.api.v1alpha.PresentationKind presentation_kind = 18;
+  anthropic.bard.api.v1alpha.SandboxFileAvailability sandbox_availability = 26;
+  string availability_text = 27;
+  anthropic.bard.api.v1alpha.FileDisplay.InlineSnapshot inline_snapshot = 13;
+  optional bool pinned = 19;
+  anthropic.bard.api.v1alpha.SkillSummary skill_summary = 20;
+  anthropic.bard.api.v1alpha.ArtifactAutoOpen auto_open = 21;
+  anthropic.bard.api.v1alpha.PublishedArtifactAction published_action = 22;
+  anthropic.bard.api.v1alpha.PublishedPageLook published_look = 28;
+}
+
+message SkillSummary {
+  string name = 1;
+  string description = 2;
+  string title = 3;
+}
+
+message PublishedPageLook {
+  string type_title = 1;
+  anthropic.bard.api.v1alpha.BuiltinIconType icon = 2;
+  anthropic.bard.api.v1alpha.IconTint tint = 3;
+}

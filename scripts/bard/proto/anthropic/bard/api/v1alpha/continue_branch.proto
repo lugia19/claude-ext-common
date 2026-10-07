@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package anthropic.bard.api.v1alpha;
+
+message ContinueBranchAsNewChat {
+  string source_conversation_id = 1;
+  string through_message_id = 2;
+}

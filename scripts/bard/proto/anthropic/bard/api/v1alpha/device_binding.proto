@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package anthropic.bard.api.v1alpha;
+
+import "google/protobuf/timestamp.proto";
+
+message BindDevice {
+  message Attestation {
+    string kid = 1;
+    bytes signature = 2;
+  }
+  string target_device_id = 1;
+  anthropic.bard.api.v1alpha.BindDevice.Attestation bind_attestation = 2;
+  google.protobuf.Timestamp bind_attestation_issued_at = 3;
+  string expected_current_device_id = 4;
+  string target_device_display_name = 5;
+}
