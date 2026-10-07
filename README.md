@@ -24,7 +24,8 @@ There is no bundler. Every file is a plain script listed directly in the extensi
 | `i18n/account-locale-watcher.js` | MAIN | Records the account language from `PUT /api/account_profile`. IIFE, safe for every extension to load |
 | `i18n/<lang>.js` | any | Tables for the `shared.*` keys used by the files here |
 | `claude/page.js` | ISOLATED (+ MAIN, one extension) | `getActiveOrgId`, `getConversationId`, `getIncognitoConversationId`, `isIncognito`, `getProjectId`, and page predicates (`isHomePage`, `isChatPage`, `isProjectPage`, `isCodePage`, `isCoworkPage`). URL, cookie and sessionStorage only, never the DOM |
-| `net/net.js` | any (MAIN-safe) | `globalThis.ClaudeExtNet`: fetch arguments (`getFetchUrl`, `getFetchMethod`), API URLs (`getApiIds`, `isCompletionUrl`), rebuilt responses (`sanitizedHeaders`, `jsonResponse`), request bodies (`readJsonRequestBody`, `withJsonRequestBody`, `isGzipRequest`, `isGzipBytes`, `gunzipBytes`), SSE (`createSseSplitter`, `readSseEvents`) and `isKillSwitchOn`. Versioned, newest wins: see Rules |
+| `net/net.js` | any (MAIN-safe) | `globalThis.ClaudeExtNet`: fetch arguments (`getFetchUrl`, `getFetchMethod`), API URLs (`getApiIds`, `isCompletionUrl`), rebuilt responses (`sanitizedHeaders`, `jsonResponse`), request bodies (`readJsonRequestBody`, `withJsonRequestBody`, `isGzipRequest`, `isGzipBytes`, `gunzipBytes`), SSE (`createSseSplitter`, `readSseEvents`), Connect-RPC frames (`splitConnectFrames`, `readConnectFrames`), the bard API decoder (`decodeBard`, needs `net/bard-schema.js`) and `isKillSwitchOn`. Versioned, newest wins: see Rules |
+| `net/bard-schema.js` | any (MAIN-safe) | `globalThis.ClaudeExtBardSchema`: the bard API schema subset `decodeBard` reads (~100 KB). **Generated** by `scripts/bard/gen-schema.mjs`, never edited by hand. Load it wherever `decodeBard` is called. Versioned, newest wins: see Rules |
 | `ui/components.js` | ISOLATED | claude.ai-styled UI kit: `CLAUDE_CLASSES`, `ClaudeModal`, alert/confirm/prompt helpers, `createClaude*` controls, `createLanguageSelect`, `openDebugLogs`, tooltips, `isMobileLayout` |
 | `ui/cards.js` | ISOLATED | `FloatingCard`, `makeDraggable`, `initNotificationCards` (version-update and rate-reminder cards) |
 | `assets/` | - | Images used by the cards. List them in `web_accessible_resources`. |
@@ -52,6 +53,9 @@ These exist because two extensions load this code into the same page.
   new options are fine, removing a member or changing its parameters or result is not. Callers must
   look members up on the object at call time (`const net = ClaudeExtNet; net.x()`), never keep a
   member itself.
+- **`net/bard-schema.js` is versioned the same way**, as one table: the highest `VERSION` wins and an
+  older copy loading later changes nothing. `gen-schema.mjs` bumps `VERSION` itself whenever the
+  table changes; `decodeBard` looks the table up at call time.
 - **The page DOM is shared too.** Don't inject a stylesheet with a fixed id or shared class names
   whose rules could differ between versions. Style with claude.ai's own Tailwind/CDS classes and
   inline styles.

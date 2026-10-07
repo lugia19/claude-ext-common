@@ -23,13 +23,21 @@ npm ci                   # @bufbuild/protobuf, dev only
    `page/dump-descriptors.js` (chrome-devtools MCP `evaluate_script`, or paste into the console)
    and save the returned JSON as `descriptors.json`. protobuf-es embeds every `.proto` in the bundle
    as a base64 `FileDescriptorProto`, field names included. Only loaded chunks are scanned.
-2. **Render it.** `node render-protos.mjs` rewrites `proto/` from `descriptors.json`. Commit both.
+2. **Render it.** `node render-protos.mjs` rewrites `proto/` from `descriptors.json`, and
+   `node gen-schema.mjs` rewrites `net/bard-schema.js` (the table `ClaudeExtNet.decodeBard` reads,
+   bumping its `VERSION` if it changed). Commit all three. To decode another call's messages at
+   runtime, add its request/response to `ROOTS` in `gen-schema.mjs`.
 3. **Capture traffic.** Install `page/capture-hook.js` before the page's code runs (MCP
    `navigate_page({ type: 'reload', initScript })`), drive the UI, then export `window.__recon`
    (see the file's header). Captures go in `captures/`, which is gitignored: they hold request
    bodies.
 4. **Decode it.** `node decode-capture.mjs captures/x.json --compact --out captures/x.decoded.json`,
    then `node timeline.mjs captures/x.decoded.json` for one line per action and stream event.
+5. **Check the runtime decoder.** `node check-decoder.mjs` decodes every captured message with
+   `net.js`'s `decodeBard` and with protobuf-es, and fails on any difference; it also tests
+   `readConnectFrames` on the captured streams (cut into random chunks) and that older copies of
+   `net.js` / `bard-schema.js` loading later change nothing. Run it after regenerating the schema
+   or touching the decoder.
 
 Gotchas the scripts already handle:
 - protobuf-es strips each embedded descriptor's `dependency` list, its own well-known types
