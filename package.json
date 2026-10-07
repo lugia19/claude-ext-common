@@ -1,0 +1,13 @@
+{
+  "name": "claude-ext-common",
+  "private": true,
+  "description": "Shared code for Claude Usage Tracker and Claude QoL. Dev dependencies are for linting only.",
+  "scripts": {
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.31.0",
+    "eslint": "^9.31.0",
+    "globals": "^16.3.0"
+  }
+}

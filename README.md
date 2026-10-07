@@ -29,6 +29,7 @@ There is no bundler. Every file is a plain script listed directly in the extensi
 | `ui/cards.js` | ISOLATED | `FloatingCard`, `makeDraggable`, `initNotificationCards` (version-update and rate-reminder cards) |
 | `assets/` | - | Images used by the cards. List them in `web_accessible_resources`. |
 | `scripts/` | - | Dev tooling, see below. Exclude it from builds (`--ignore-files "common/scripts/**"`). |
+| `eslint.base.cjs` | - | The ESLint config shared by all three repos, see Linting. Exclude it, `eslint.config.cjs` and `package*.json` from builds. |
 
 Load order: `log/logger.js` (then the extension's `configureLogger` call), the `i18n/<lang>.js` tables, then the extension's own tables, then `i18n/i18n-core.js`,
 then `claude/page.js`, then `ui/components.js`, then `ui/cards.js`.
@@ -98,6 +99,25 @@ can't resolve the language: have the content script store `currentLocale()` for 
 `createLanguageSelect()` builds the picker; save its value with `setLanguageOverride()`.
 `i18n-core.js` also publishes its API on `globalThis`, so an ES-module background can load it with a
 side-effect `import`.
+
+## Linting
+
+`eslint.base.cjs` is the one ESLint flat config for this repo and both extensions. Each repo's
+`eslint.config.js` calls `baseConfig({ root, groups, libGlobals, modules, node, ignores })` with what's
+its own (see the file's header). The rules: `@eslint/js` recommended, `no-undef`, and `no-unused-vars`
+ignoring arguments, catch bindings and rest siblings, and, in plain scripts, top-level names (those
+are shared with other files).
+
+**Cross-file globals are derived, never declared.** No `/* global */` headers and no hand-kept lists.
+Scripts that share a scope form a group: a `content_scripts` entry of a manifest (`manifestGroups`),
+the `<script>` tags of an extension page (`htmlGroups`), or a list by hand. Every file in a group is
+parsed for what it declares at top level or assigns to `globalThis`/`window`/`self`, and each file may
+use its group's names. A file in several groups (a helper in both MAIN and ISOLATED) gets only the
+names all of them provide. Minified libraries aren't parsed: name their globals in `libGlobals`.
+
+In this repo: `npm ci`, then `npx eslint .` (works in a standalone clone or in an extension's
+`common/` submodule: `check-common.js` lets an ignored root `node_modules/` through, and web-ext
+never packs it). The extensions resolve the base's dependencies from their own `node_modules`.
 
 ## Scripts
 
