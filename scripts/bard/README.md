@@ -155,8 +155,11 @@ with `i` = the lowest index served.
     your current plan".
   - **Extension contexts get 403** `permission_denied` "origin not allowed": the RPC endpoints
     check `Origin`, and a background/extension-page fetch sends `chrome-extension://…`. The legacy
-    `/api/` endpoints don't check it. So calling any RPC needs the page's origin (MAIN world, or a
-    content script), unless a header rewrite turns out to be accepted (untested).
+    `/api/` endpoints don't check it. **Only `Origin` is checked**: a Chrome
+    `declarativeNetRequest` rule (`declarativeNetRequestWithHostAccess`) setting
+    `Origin: https://claude.ai` on the extension's own requests (`initiatorDomains: [extension id]`,
+    `urlFilter: '|https://claude.ai/claudeai-rpc/'`) turned the same call into a 200. Where no
+    such rewrite exists (Electron), the call has to come from the page (MAIN world).
 - Content is display-shaped, but **close to the legacy tree in substance**. Measured on the same
   2,447-message chat:
 
