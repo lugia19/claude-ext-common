@@ -36,13 +36,19 @@ const espree = require('espree');
 
 const posix = (p) => p.split(path.sep).join('/');
 
-// content_scripts entries of a manifest, one group each: { name, files } with repo-relative paths.
+// A manifest's content scripts as groups: { name, files } with repo-relative paths. Entries in the same
+// world with the same `matches` run in one scope whatever their run_at (an extension has one ISOLATED
+// world per frame), so they form one group; entries matching different pages don't.
 function manifestGroups(root, manifestFile) {
 	const manifest = JSON.parse(fs.readFileSync(path.join(root, manifestFile), 'utf8'));
-	return (manifest.content_scripts ?? []).map((cs, i) => ({
-		name: `${manifestFile} content_scripts[${i}] (${cs.world ?? 'ISOLATED'})`,
-		files: cs.js ?? [],
-	}));
+	const groups = new Map();
+	for (const cs of manifest.content_scripts ?? []) {
+		const world = cs.world ?? 'ISOLATED';
+		const key = `${world} ${JSON.stringify(cs.matches ?? [])}`;
+		if (!groups.has(key)) groups.set(key, { name: `${manifestFile} content_scripts (${world}) ${(cs.matches ?? []).join(' ')}`, files: [] });
+		groups.get(key).files.push(...(cs.js ?? []));
+	}
+	return [...groups.values()];
 }
 
 // Extension pages: the local <script src> files of each HTML file, one group per page.
