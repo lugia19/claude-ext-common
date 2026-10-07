@@ -37,7 +37,7 @@ if (!pinned) fail('This repo has no common/ submodule in HEAD.');
 // Untracked files there still count, as they may be uncommitted work.
 const dirty = git(['-C', 'common', 'status', '--porcelain', '--untracked-files=all', '--ignored'])
 	.split('\n')
-	.filter(line => line && !line.startsWith('!! scripts/') && line !== '!! node_modules/');
+	.filter(line => line && !line.startsWith('!! scripts/') && !line.startsWith('!! node_modules/'));
 if (dirty.length) {
 	fail('common/ has uncommitted changes or extra files. Commit them in common (and bump the pointer), or remove them.');
 }
