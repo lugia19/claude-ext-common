@@ -111,7 +111,10 @@ are shared with other files).
 
 **Cross-file globals are derived, never declared.** No `/* global */` headers and no hand-kept lists.
 Scripts that share a scope form a group: a `content_scripts` entry of a manifest (`manifestGroups`),
-the `<script>` tags of an extension page (`htmlGroups`), or a list by hand. Every file in a group is
+the `<script>` tags of an extension page (`htmlGroups`), an ES-module graph (`moduleGroup`, for a
+module background: a side-effect-imported classic script only adds what it publishes on `globalThis`,
+since its top-level declarations stay module-scoped), or a list by hand. Publishing is `globalThis.X =
+…` or `Object.assign(globalThis, { … })` (also on `window`/`self`). Every file in a group is
 parsed for what it declares at top level or assigns to `globalThis`/`window`/`self`, and each file may
 use its group's names. A file in several groups (a helper in both MAIN and ISOLATED) gets only the
 names all of them provide. Minified libraries aren't parsed: name their globals in `libGlobals`.
