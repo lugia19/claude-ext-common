@@ -64,6 +64,11 @@ function* frames(buf) {
 	}
 }
 
+// Already-compacted input (a "[N tools]" string) passes through, so re-running is harmless.
+function compactTools(v) {
+	return typeof v === 'string' ? v : `[${Object.keys(v?.tools ?? {}).length} tools]`;
+}
+
 const out = [];
 for (const r of records) {
 	const method = r.url && methodOf(r.url);
@@ -80,6 +85,12 @@ for (const r of records) {
 		? [...frames(req)].map(f => (f.payload ? decode(method.input, f.payload) : f))
 		: decode(method.input, req);
 	const resp = Buffer.concat((r.chunks ?? []).map(c => Buffer.from(c.b, 'base64')));
+	if (r.truncated) {
+		// capture-hook.js hit its size limit: a stream decodes up to the cut (frames() marks the
+		// partial last frame), but a unary body is useless without its end.
+		rec.truncated = true;
+		console.warn(`warning: ${rec.method} at ${r.t} was truncated at ${resp.length} bytes (raise window.__reconMaxBytes)`);
+	}
 	if ((r.respCT ?? '').includes('connect+')) {
 		// Arrival times: map each frame to the chunk that completed it.
 		const ends = [];
@@ -93,12 +104,14 @@ for (const r of records) {
 			if (f.flags & 0x02) return { dt, endStream: JSON.parse(f.payload.toString('utf8') || '{}') };
 			return { dt, ...decode(method.output, f.payload) };
 		});
+	} else if (r.truncated) {
+		rec.response = { truncated: true, have: resp.length };
 	} else if (resp.length) {
 		rec.response = decode(method.output, resp);
 	}
 	out.push(rec);
 }
 
-const json = JSON.stringify(out, (k, v) => (compact && k === 'enabled_mcp_tools' ? `[${Object.keys(v.tools ?? {}).length} tools]` : v), 2);
+const json = JSON.stringify(out, (k, v) => (compact && k === 'enabled_mcp_tools' ? compactTools(v) : v), 2);
 if (outFile) fs.writeFileSync(outFile, json);
 else console.log(json);

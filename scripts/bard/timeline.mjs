@@ -14,7 +14,8 @@ const records = JSON.parse(fs.readFileSync(args[0], 'utf8'));
 const UUID = /\b([0-9a-f]{8})-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/g;
 function compact(value) {
 	return JSON.stringify(value, (k, v) => {
-		if (k === 'enabled_mcp_tools') return `[${Object.keys(v.tools ?? {}).length} tools]`;
+		// decode-capture --compact may already have collapsed it to a "[N tools]" string.
+		if (k === 'enabled_mcp_tools') return typeof v === 'string' ? v : `[${Object.keys(v?.tools ?? {}).length} tools]`;
 		if (k === 'conversation_id') return undefined;
 		if (typeof v === 'string' && v.length > 120) return v.slice(0, 100) + `…(${v.length})`;
 		return v;

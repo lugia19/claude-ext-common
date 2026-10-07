@@ -8,6 +8,10 @@
 // then decode with `node scripts/bard/decode-capture.mjs <file>`.
 //
 // The records hold request bodies verbatim. Don't commit captures.
+//
+// Each response is recorded up to window.__reconMaxBytes (default 64 MB, set it before the page
+// loads to change it). Past that the record gets `truncated: true` and stops recording, so a
+// long-lived StreamTimeline left open can't grow without bound; the page's own copy is untouched.
 (() => {
 	window.__recon = [];
 	const b64 = (u8) => {
@@ -50,13 +54,18 @@
 		rec.chunks = [];
 		(async () => {
 			const reader = resp.clone().body.getReader();
+			const maxBytes = window.__reconMaxBytes ?? 64e6;
 			let total = 0;
 			for (;;) {
 				const { done, value } = await reader.read();
 				if (done) break;
 				rec.chunks.push({ dt: Date.now() - rec.t, b: b64(value) });
 				total += value.length;
-				if (total > 8e6) break;
+				if (total > maxBytes) {
+					rec.truncated = true;
+					reader.cancel();
+					break;
+				}
 			}
 			rec.done = Date.now();
 		})().catch(e => { rec.respErr = String(e); });
