@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package anthropic.bard.api.v1alpha;
+
+import "anthropic/bard/api/v1alpha/conversation.proto";
+import "google/protobuf/timestamp.proto";
+
+message ListConversationMembershipsRequest {
+  optional string older_cursor = 1;
+  optional int32 limit = 2;
+}
+
+message ListConversationMembershipsResponse {
+  repeated anthropic.bard.api.v1alpha.ConversationMembership memberships = 1;
+  optional string older_cursor = 2;
+}
+
+message ConversationMembership {
+  string conversation_id = 1;
+  string owner_account_uuid = 2;
+  google.protobuf.Timestamp added_at = 3;
+  anthropic.bard.api.v1alpha.Conversation conversation = 4;
+}

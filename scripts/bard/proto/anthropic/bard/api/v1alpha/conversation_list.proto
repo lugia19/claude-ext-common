@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package anthropic.bard.api.v1alpha;
+
+import "anthropic/bard/api/v1alpha/conversation.proto";
+import "anthropic/bard/api/v1alpha/streaming.proto";
+
+message StreamConversationListRequest {
+  optional string sync_token = 1;
+  optional int32 head_limit = 2;
+}
+
+message StreamConversationListResponse {
+  oneof event {
+    anthropic.bard.api.v1alpha.ConversationListUpdate update = 1;
+    anthropic.bard.api.v1alpha.Heartbeat heartbeat = 2;
+  }
+}
+
+message ConversationListUpdate {
+  bool replace_head = 1;
+  repeated anthropic.bard.api.v1alpha.Conversation conversations = 2;
+  repeated anthropic.bard.api.v1alpha.ConversationRemoved removed = 3;
+  optional string sync_token = 4;
+  optional string older_cursor = 5;
+}
+
+message ConversationRemoved {
+  string conversation_id = 1;
+  optional int64 revision_ns = 3;
+}
+
+message ListConversationsRequest {
+  optional string older_cursor = 1;
+  optional int32 limit = 2;
+  optional bool starred = 3;
+  optional string project_id = 4;
+}
+
+message ListConversationsResponse {
+  repeated anthropic.bard.api.v1alpha.Conversation conversations = 1;
+  optional string older_cursor = 2;
+}

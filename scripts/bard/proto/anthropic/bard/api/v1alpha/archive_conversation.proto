@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package anthropic.bard.api.v1alpha;
+
+message ArchiveConversation {
+  bool archived = 1;
+}

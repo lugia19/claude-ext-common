@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package anthropic.bard.api.v1alpha;
+
+enum CancelReason {
+  CANCEL_REASON_UNSPECIFIED = 0;
+  CANCEL_REASON_STOPPED = 1;
+  CANCEL_REASON_DENIED = 2;
+}

@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package anthropic.bard.api.v1alpha;
+
+enum IconTint {
+  ICON_TINT_UNSPECIFIED = 0;
+  ICON_TINT_GRAY = 1;
+  ICON_TINT_RED = 2;
+  ICON_TINT_ORANGE = 3;
+  ICON_TINT_YELLOW = 4;
+  ICON_TINT_GREEN = 5;
+  ICON_TINT_AQUA = 6;
+  ICON_TINT_BLUE = 7;
+  ICON_TINT_VIOLET = 8;
+  ICON_TINT_MAGENTA = 9;
+}

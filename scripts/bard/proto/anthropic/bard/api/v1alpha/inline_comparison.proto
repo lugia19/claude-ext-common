@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package anthropic.bard.api.v1alpha;
+
+import "anthropic/bard/api/v1alpha/conversation.proto";
+import "google/protobuf/timestamp.proto";
+
+message InlineComparison {
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    STATE_STARTED = 1;
+    STATE_READY = 2;
+  }
+  enum ArmStop {
+    ARM_STOP_UNSPECIFIED = 0;
+    ARM_STOP_TRUNCATED = 1;
+    ARM_STOP_USER_STOPPED = 2;
+    ARM_STOP_FAILED = 3;
+  }
+  string id = 1;
+  string conversation_id = 2;
+  string user_message_id = 3;
+  string primary_message_id = 4;
+  string challenger_message_id = 5;
+  int32 primary_position = 6;
+  anthropic.bard.api.v1alpha.InlineComparison.State state = 7;
+  anthropic.bard.api.v1alpha.InlineComparison.ArmStop primary_stop = 8;
+  anthropic.bard.api.v1alpha.InlineComparison.ArmStop challenger_stop = 9;
+  bool buffer_responses = 10;
+  google.protobuf.Timestamp created_at = 11;
+  anthropic.bard.api.v1alpha.FeedbackType challenger_feedback = 13;
+}

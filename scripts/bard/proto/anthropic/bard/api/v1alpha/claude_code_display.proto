@@ -1,0 +1,333 @@
+syntax = "proto3";
+
+package anthropic.bard.api.v1alpha;
+
+import "anthropic/bard/api/v1alpha/file_display.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+enum TodoStatus {
+  TODO_STATUS_UNSPECIFIED = 0;
+  TODO_STATUS_PENDING = 1;
+  TODO_STATUS_IN_PROGRESS = 2;
+  TODO_STATUS_COMPLETED = 3;
+}
+
+enum CodeReviewLevel {
+  CODE_REVIEW_LEVEL_UNSPECIFIED = 0;
+  CODE_REVIEW_LEVEL_LOW = 1;
+  CODE_REVIEW_LEVEL_MEDIUM = 2;
+  CODE_REVIEW_LEVEL_HIGH = 3;
+  CODE_REVIEW_LEVEL_XHIGH = 4;
+  CODE_REVIEW_LEVEL_MAX = 5;
+}
+
+enum CodeReviewVerdict {
+  CODE_REVIEW_VERDICT_UNSPECIFIED = 0;
+  CODE_REVIEW_VERDICT_CONFIRMED = 1;
+  CODE_REVIEW_VERDICT_PLAUSIBLE = 2;
+}
+
+enum CodeReviewOutcome {
+  CODE_REVIEW_OUTCOME_UNSPECIFIED = 0;
+  CODE_REVIEW_OUTCOME_FIXED = 1;
+  CODE_REVIEW_OUTCOME_SKIPPED = 2;
+  CODE_REVIEW_OUTCOME_NO_CHANGE_NEEDED = 3;
+}
+
+enum AgentResolveStatus {
+  AGENT_RESOLVE_STATUS_UNSPECIFIED = 0;
+  AGENT_RESOLVE_STATUS_ASYNC_LAUNCHED = 1;
+  AGENT_RESOLVE_STATUS_REMOTE_LAUNCHED = 2;
+  AGENT_RESOLVE_STATUS_TEAMMATE_SPAWNED = 3;
+}
+
+enum SkillProposalKind {
+  SKILL_PROPOSAL_KIND_UNSPECIFIED = 0;
+  SKILL_PROPOSAL_KIND_NEW = 1;
+  SKILL_PROPOSAL_KIND_IMPROVEMENT = 2;
+}
+
+enum SkillListKind {
+  SKILL_LIST_KIND_UNSPECIFIED = 0;
+  SKILL_LIST_KIND_ADDABLE = 1;
+  SKILL_LIST_KIND_ENABLED = 2;
+}
+
+enum SkillCreatorKind {
+  SKILL_CREATOR_KIND_UNSPECIFIED = 0;
+  SKILL_CREATOR_KIND_ANTHROPIC = 1;
+  SKILL_CREATOR_KIND_USER_OR_ORG = 2;
+}
+
+enum SkillSuggestionTrigger {
+  SKILL_SUGGESTION_TRIGGER_UNSPECIFIED = 0;
+  SKILL_SUGGESTION_TRIGGER_USER_ASKED = 1;
+  SKILL_SUGGESTION_TRIGGER_PROACTIVE = 2;
+}
+
+enum PluginListKind {
+  PLUGIN_LIST_KIND_UNSPECIFIED = 0;
+  PLUGIN_LIST_KIND_INSTALLABLE = 1;
+  PLUGIN_LIST_KIND_ENABLED = 2;
+}
+
+enum PluginSuggestionTrigger {
+  PLUGIN_SUGGESTION_TRIGGER_UNSPECIFIED = 0;
+  PLUGIN_SUGGESTION_TRIGGER_USER_ASKED = 1;
+  PLUGIN_SUGGESTION_TRIGGER_PROACTIVE = 2;
+}
+
+enum BackgroundTaskAgentState {
+  BACKGROUND_TASK_AGENT_STATE_UNSPECIFIED = 0;
+  BACKGROUND_TASK_AGENT_STATE_PENDING = 1;
+  BACKGROUND_TASK_AGENT_STATE_RUNNING = 2;
+  BACKGROUND_TASK_AGENT_STATE_DONE = 3;
+  BACKGROUND_TASK_AGENT_STATE_ERROR = 4;
+}
+
+enum BackgroundTaskType {
+  BACKGROUND_TASK_TYPE_UNSPECIFIED = 0;
+  BACKGROUND_TASK_TYPE_LOCAL_BASH = 1;
+  BACKGROUND_TASK_TYPE_LOCAL_AGENT = 2;
+  BACKGROUND_TASK_TYPE_REMOTE_AGENT = 3;
+  BACKGROUND_TASK_TYPE_IN_PROCESS_TEAMMATE = 4;
+  BACKGROUND_TASK_TYPE_LOCAL_WORKFLOW = 5;
+}
+
+enum ToolRowKind {
+  TOOL_ROW_KIND_UNSPECIFIED = 0;
+  TOOL_ROW_KIND_GENERIC = 1;
+  TOOL_ROW_KIND_SHELL = 2;
+  TOOL_ROW_KIND_FILE_READ = 3;
+  TOOL_ROW_KIND_FILE_WRITE = 4;
+  TOOL_ROW_KIND_FILE_EDIT = 5;
+  TOOL_ROW_KIND_FILE_SEARCH = 6;
+  TOOL_ROW_KIND_WEB_SEARCH = 7;
+  TOOL_ROW_KIND_WEB_FETCH = 8;
+  TOOL_ROW_KIND_AGENT = 9;
+  TOOL_ROW_KIND_DISPLAY_CARD = 10;
+  TOOL_ROW_KIND_TASK_LIST = 11;
+  TOOL_ROW_KIND_SKILL = 12;
+  TOOL_ROW_KIND_QUESTION = 13;
+  TOOL_ROW_KIND_SCHEDULED_TASK = 14;
+  TOOL_ROW_KIND_BROWSER = 16;
+}
+
+enum ToolRowFileLocation {
+  TOOL_ROW_FILE_LOCATION_UNSPECIFIED = 0;
+  TOOL_ROW_FILE_LOCATION_SANDBOX = 1;
+  TOOL_ROW_FILE_LOCATION_OTHER = 2;
+}
+
+enum InputSummaryKind {
+  INPUT_SUMMARY_KIND_UNSPECIFIED = 0;
+  INPUT_SUMMARY_KIND_TEXT = 1;
+  INPUT_SUMMARY_KIND_COMMAND = 2;
+  INPUT_SUMMARY_KIND_FILE_PATH = 3;
+  INPUT_SUMMARY_KIND_PATTERN = 4;
+  INPUT_SUMMARY_KIND_URL = 5;
+  INPUT_SUMMARY_KIND_QUERY = 6;
+  INPUT_SUMMARY_KIND_UNNAMED_WEB_PAGE = 7;
+  INPUT_SUMMARY_KIND_SKILL_NAME = 8;
+  INPUT_SUMMARY_KIND_JAVASCRIPT = 9;
+}
+
+enum InputVisibility {
+  INPUT_VISIBILITY_UNSPECIFIED = 0;
+  INPUT_VISIBILITY_SHOWN = 1;
+  INPUT_VISIBILITY_ON_REQUEST = 2;
+}
+
+message FileDiff {
+  enum Operation {
+    OPERATION_UNSPECIFIED = 0;
+    OPERATION_WRITE = 1;
+    OPERATION_EDIT = 2;
+  }
+  string file_path = 1;
+  repeated anthropic.bard.api.v1alpha.DiffHunk hunks = 2;
+  anthropic.bard.api.v1alpha.FileDiff.Operation operation = 3;
+  anthropic.bard.api.v1alpha.FileDisplay file = 4;
+  optional int32 added_lines = 5;
+  optional int32 removed_lines = 6;
+}
+
+message DiffHunk {
+  int32 old_start = 1;
+  int32 old_lines = 2;
+  int32 new_start = 3;
+  int32 new_lines = 4;
+  repeated anthropic.bard.api.v1alpha.DiffLine lines = 5;
+}
+
+message DiffLine {
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    TYPE_CONTEXT = 1;
+    TYPE_ADD = 2;
+    TYPE_REMOVE = 3;
+  }
+  anthropic.bard.api.v1alpha.DiffLine.Type type = 1;
+  string content = 2;
+}
+
+message TodoList {
+  int32 completed_count = 1;
+  int32 total_count = 2;
+  string active_form = 3;
+  repeated anthropic.bard.api.v1alpha.TodoItem items = 4;
+  string summary = 6;
+}
+
+message TodoItem {
+  string content = 1;
+  anthropic.bard.api.v1alpha.TodoStatus status = 2;
+}
+
+message CodeReviewFindings {
+  anthropic.bard.api.v1alpha.CodeReviewLevel level = 1;
+  repeated anthropic.bard.api.v1alpha.CodeReviewFinding findings = 2;
+}
+
+message CodeReviewFinding {
+  string file_path = 1;
+  optional int32 line = 2;
+  string summary = 3;
+  string short_summary = 4;
+  string failure_scenario = 5;
+  string category = 6;
+  anthropic.bard.api.v1alpha.CodeReviewVerdict verdict = 7;
+  anthropic.bard.api.v1alpha.CodeReviewOutcome outcome = 8;
+}
+
+message AgentProgress {
+  string agent_type = 1;
+  string description = 2;
+  int32 tool_uses = 3;
+  int64 total_tokens = 4;
+  google.protobuf.Duration duration = 5;
+  string last_tool_name = 6;
+  string progress_summary = 7;
+  anthropic.bard.api.v1alpha.AgentResolveStatus resolve_status = 8;
+  string task_id = 9;
+}
+
+message SkillProposalsDisplay {
+  repeated anthropic.bard.api.v1alpha.SkillProposal proposals = 1;
+}
+
+message SkillProposal {
+  string name = 1;
+  anthropic.bard.api.v1alpha.SkillProposalKind kind = 2;
+  string target = 3;
+  string description = 4;
+  string body = 5;
+  repeated string evidence = 6;
+}
+
+message SkillSuggestionsDisplay {
+  anthropic.bard.api.v1alpha.SkillListKind kind = 1;
+  string context_label = 2;
+  anthropic.bard.api.v1alpha.SkillSuggestionTrigger trigger = 3;
+  repeated anthropic.bard.api.v1alpha.SuggestedSkill skills = 4;
+}
+
+message SuggestedSkill {
+  string skill_id = 1;
+  string name = 2;
+  string description = 3;
+  anthropic.bard.api.v1alpha.SkillCreatorKind creator = 4;
+  string backing_plugin_id = 5;
+}
+
+message PluginSuggestionsDisplay {
+  anthropic.bard.api.v1alpha.PluginListKind kind = 1;
+  string context_label = 2;
+  repeated anthropic.bard.api.v1alpha.SuggestedPlugin plugins = 3;
+  anthropic.bard.api.v1alpha.PluginSuggestionTrigger trigger = 4;
+}
+
+message SuggestedPlugin {
+  string plugin_id = 1;
+  string name = 2;
+  string description = 3;
+  repeated anthropic.bard.api.v1alpha.SuggestedPluginSkill skills = 4;
+}
+
+message SuggestedPluginSkill {
+  string name = 1;
+  string description = 2;
+}
+
+message BackgroundTask {
+  string task_id = 1;
+  anthropic.bard.api.v1alpha.BackgroundTaskType task_type = 2;
+  string description = 3;
+  int32 tool_uses = 4;
+  int64 total_tokens = 5;
+  google.protobuf.Duration duration = 6;
+  string last_tool_name = 7;
+  string progress_summary = 8;
+  bool is_backgrounded = 9;
+  string content_block_id = 10;
+  repeated anthropic.bard.api.v1alpha.BackgroundTaskAgent agents = 11;
+}
+
+message BackgroundTaskAgent {
+  int32 index = 1;
+  string label = 2;
+  anthropic.bard.api.v1alpha.BackgroundTaskAgentState state = 3;
+  int32 tool_calls = 4;
+  google.protobuf.Timestamp started_at = 5;
+  google.protobuf.Duration duration = 6;
+}
+
+message CollapsedGroupMeta {
+  repeated anthropic.bard.api.v1alpha.BucketCount buckets = 1;
+  optional anthropic.bard.api.v1alpha.CollapsedHint hint = 2;
+  bool noise_only = 3;
+  int32 tool_count = 4;
+  google.protobuf.Timestamp started_at = 5;
+  repeated anthropic.bard.api.v1alpha.RowFold row_folds = 6;
+}
+
+message RowFold {
+  repeated string content_block_ids = 1;
+  string caption = 2;
+}
+
+message BucketCount {
+  enum Bucket {
+    BUCKET_UNSPECIFIED = 0;
+    BUCKET_SEARCH = 1;
+    BUCKET_READ = 2;
+    BUCKET_BASH = 3;
+    BUCKET_EDIT = 4;
+    BUCKET_FETCH = 5;
+    BUCKET_USED = 6;
+    BUCKET_MEM_READ = 7;
+    BUCKET_MEM_SEARCH = 8;
+    BUCKET_MEM_WRITE = 9;
+    BUCKET_AGENT = 10;
+  }
+  anthropic.bard.api.v1alpha.BucketCount.Bucket bucket = 1;
+  int32 count = 2;
+  repeated string labels = 3;
+}
+
+message CollapsedHint {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    KIND_PATTERN = 1;
+    KIND_PATH = 2;
+    KIND_SHELL = 3;
+    KIND_MCP_QUERY = 4;
+    KIND_BASH_LABEL = 5;
+  }
+  string text = 1;
+  anthropic.bard.api.v1alpha.CollapsedHint.Kind kind = 2;
+  optional google.protobuf.Duration elapsed = 3;
+  optional int32 line_count = 4;
+  string label = 5;
+}

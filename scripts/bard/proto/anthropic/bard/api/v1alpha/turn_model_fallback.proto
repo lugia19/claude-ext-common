@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package anthropic.bard.api.v1alpha;
+
+message TurnModelFallback {
+  optional string display_text = 1;
+  optional string requested_model = 2;
+  optional string served_model = 3;
+}

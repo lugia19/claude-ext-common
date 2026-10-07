@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package anthropic.bard.api.v1alpha;
+
+message LabelValueTable {
+  message Row {
+    enum RowRole {
+      ROW_ROLE_UNSPECIFIED = 0;
+      ROW_ROLE_SUBJECT_IDENTITY = 1;
+      ROW_ROLE_REPLACED_VALUE = 2;
+      ROW_ROLE_FREE_TEXT = 3;
+      ROW_ROLE_SECTION_HEADER = 4;
+      ROW_ROLE_ITEM_END = 5;
+      ROW_ROLE_SUBSECTION_HEADER = 6;
+      ROW_ROLE_REMAINDER = 7;
+    }
+    string label = 1;
+    string value = 2;
+    bool is_truncated = 3;
+    optional string verified_name = 4;
+    anthropic.bard.api.v1alpha.LabelValueTable.Row.RowRole role = 5;
+    string input_key = 6;
+  }
+  repeated anthropic.bard.api.v1alpha.LabelValueTable.Row rows = 1;
+}

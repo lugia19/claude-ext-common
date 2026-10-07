@@ -1,0 +1,287 @@
+syntax = "proto3";
+
+package anthropic.bard.api.v1alpha;
+
+import "anthropic/bard/api/v1alpha/content.proto";
+import "anthropic/bard/api/v1alpha/context_breakdown.proto";
+import "anthropic/bard/api/v1alpha/conversation.proto";
+import "anthropic/bard/api/v1alpha/elicitation.proto";
+import "anthropic/bard/api/v1alpha/inline_comparison.proto";
+import "anthropic/bard/api/v1alpha/model_change.proto";
+import "google/protobuf/timestamp.proto";
+
+enum RebaseReason {
+  REBASE_REASON_UNSPECIFIED = 0;
+  REBASE_REASON_BOOT = 1;
+  REBASE_REASON_CATCH_UP = 2;
+  REBASE_REASON_RECOVERY = 3;
+  REBASE_REASON_PRESSURE = 4;
+  REBASE_REASON_HELD_STOP = 5;
+  REBASE_REASON_EXTERNAL_PERSIST = 6;
+}
+
+enum MessageLimitPeriod {
+  MESSAGE_LIMIT_PERIOD_UNSPECIFIED = 0;
+  MESSAGE_LIMIT_PERIOD_DAILY = 1;
+  MESSAGE_LIMIT_PERIOD_WEEKLY = 2;
+  MESSAGE_LIMIT_PERIOD_MONTHLY = 3;
+}
+
+enum MessageLimitScope {
+  MESSAGE_LIMIT_SCOPE_UNSPECIFIED = 0;
+  MESSAGE_LIMIT_SCOPE_MEMBER = 1;
+  MESSAGE_LIMIT_SCOPE_SERVICE = 2;
+  MESSAGE_LIMIT_SCOPE_CHANNEL = 3;
+  MESSAGE_LIMIT_SCOPE_GROUP_POOL = 4;
+}
+
+enum MessageLimitStatus {
+  MESSAGE_LIMIT_STATUS_UNSPECIFIED = 0;
+  MESSAGE_LIMIT_STATUS_WITHIN_LIMIT = 1;
+  MESSAGE_LIMIT_STATUS_APPROACHING = 2;
+  MESSAGE_LIMIT_STATUS_EXCEEDED = 3;
+}
+
+enum StopGenerationEffect {
+  STOP_GENERATION_EFFECT_UNSPECIFIED = 0;
+  STOP_GENERATION_EFFECT_TURN_CANCELED = 1;
+  STOP_GENERATION_EFFECT_NOTHING_RUNNING = 2;
+}
+
+message Version {
+  string value = 1;
+}
+
+message Heartbeat {
+}
+
+message ConversationDeleted {
+  string conversation_id = 1;
+  optional string display_message = 4;
+}
+
+message ConversationUpdate {
+  bool replace_all_state = 1;
+  optional anthropic.bard.api.v1alpha.Conversation conversation = 2;
+  repeated anthropic.bard.api.v1alpha.Message messages = 3;
+  repeated anthropic.bard.api.v1alpha.DisplayGroup display_groups = 4;
+  repeated anthropic.bard.api.v1alpha.ContentBlock content_blocks = 5;
+  repeated anthropic.bard.api.v1alpha.Elicitation elicitations = 7;
+  repeated anthropic.bard.api.v1alpha.InlineComparison inline_comparisons = 32;
+  repeated string deleted_message_ids = 10;
+  repeated string deleted_display_group_ids = 11;
+  repeated string deleted_content_block_ids = 12;
+  repeated string deleted_elicitation_ids = 14;
+  repeated string deleted_inline_comparison_ids = 33;
+  repeated anthropic.bard.api.v1alpha.MutationAck mutation_acks = 20;
+  bool degraded_fallback = 22;
+  bool conversation_statement = 34;
+  optional anthropic.bard.api.v1alpha.RebaseReason rebase_reason = 27;
+  optional string projection_config_key = 28;
+  optional string older_history_cursor = 29;
+  optional string baseline_floor_message_id = 30;
+  optional anthropic.bard.api.v1alpha.TurnDisposition turn_disposition = 31;
+}
+
+message TurnDisposition {
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    STATE_RUNNING = 1;
+    STATE_FINISHED = 2;
+    STATE_ERRORED = 3;
+    STATE_WAITING_FOR_INPUT = 4;
+  }
+  string trigger_message_id = 1;
+  anthropic.bard.api.v1alpha.TurnDisposition.State state = 2;
+}
+
+message ContentBlockAppend {
+  string content_block_id = 1;
+  optional bool hidden_arm = 8;
+  oneof delta {
+    string text_delta = 2;
+    anthropic.bard.api.v1alpha.Citation citation_start = 4;
+    string citation_end = 5;
+    anthropic.bard.api.v1alpha.ThinkingSummary thinking_summary = 6;
+    anthropic.bard.api.v1alpha.SafetyBanner safety_banner = 7;
+    anthropic.bard.api.v1alpha.ThinkingTokenEstimate thinking_token_estimate = 9;
+  }
+}
+
+message ThinkingTokenEstimate {
+  int32 estimated_tokens = 1;
+}
+
+message MessageLimit {
+  anthropic.bard.api.v1alpha.MessageLimitStatus status = 1;
+  optional google.protobuf.Timestamp resets_at = 2;
+  optional int32 remaining = 3;
+  optional string display_message = 4;
+  optional bool overage_in_use = 5;
+  optional string overage_disabled_reason = 6;
+  optional anthropic.bard.api.v1alpha.Notice notice = 7;
+  optional bool per_model_limit = 8;
+  optional string representative_claim = 9;
+  optional anthropic.bard.api.v1alpha.MessageLimitStatus overage_status = 10;
+  optional google.protobuf.Timestamp overage_resets_at = 11;
+  optional string tier_override_reason = 12;
+  map<string, anthropic.bard.api.v1alpha.MessageLimitWindow> windows = 13;
+  optional string context_breakdown_json = 14;
+  optional string usage_recommendations_json = 15;
+  optional anthropic.bard.api.v1alpha.ContextBreakdown context_breakdown = 16;
+  optional string model = 18;
+}
+
+message MessageLimitWindow {
+  anthropic.bard.api.v1alpha.MessageLimitStatus status = 1;
+  optional google.protobuf.Timestamp resets_at = 2;
+  optional double utilization = 3;
+  optional double surpassed_threshold = 4;
+  optional anthropic.bard.api.v1alpha.MessageLimitPeriod period = 5;
+  optional anthropic.bard.api.v1alpha.MessageLimitScope limit_scope = 6;
+  optional string group_uuid = 7;
+}
+
+message Notice {
+  optional string title = 1;
+  optional string text = 2;
+  optional anthropic.bard.api.v1alpha.NoticeCta cta = 3;
+  optional bool is_dismissible = 4;
+}
+
+message NoticeCta {
+  string copy = 1;
+  string intent = 2;
+  optional string redirect_hint = 3;
+}
+
+message ModelFallback {
+  anthropic.bard.api.v1alpha.ModelFallbackEndpoint from_model = 1;
+  anthropic.bard.api.v1alpha.ModelFallbackEndpoint to_model = 2;
+  string reason = 3;
+  optional string category = 4;
+  optional string explanation = 5;
+  optional string learn_more_url = 6;
+  repeated anthropic.bard.api.v1alpha.RefusalUrl urls = 7;
+}
+
+message MemoryWriteFailure {
+  repeated anthropic.bard.api.v1alpha.MemoryWriteLoss losses = 1;
+}
+
+message MemoryWriteLoss {
+  optional string tool_use_id = 1;
+  string version = 2;
+  string loss_class = 3;
+  bool safety_rejection = 4;
+  optional google.protobuf.Timestamp acked_at = 5;
+  optional google.protobuf.Timestamp terminal_at = 6;
+  optional string display_reason = 7;
+}
+
+message ComposerNoticesChanged {
+}
+
+message StreamError {
+  string type = 1;
+  string message = 2;
+  optional string display_message = 3;
+  bool retryable = 4;
+  oneof details {
+    anthropic.bard.api.v1alpha.RateLimitError rate_limit = 5;
+    anthropic.bard.api.v1alpha.OverloadedError overloaded = 6;
+    anthropic.bard.api.v1alpha.InvalidRequestError invalid_request = 7;
+    anthropic.bard.api.v1alpha.AuthenticationError authentication = 8;
+    anthropic.bard.api.v1alpha.PermissionError permission = 9;
+    anthropic.bard.api.v1alpha.NotFoundError not_found = 10;
+    anthropic.bard.api.v1alpha.ApiError api = 11;
+  }
+}
+
+message RateLimitError {
+  optional int64 retry_after_seconds = 1;
+  optional string error_code = 2;
+  optional bool can_user_purchase_credits = 3;
+  optional bool has_chargeable_saved_payment_method = 4;
+  optional string disabled_reason = 5;
+}
+
+message OverloadedError {
+}
+
+message InvalidRequestError {
+  optional string param = 1;
+  optional string code = 10;
+  oneof error_detail {
+    anthropic.bard.api.v1alpha.MessageLimitExceeded message_limit_exceeded = 2;
+    anthropic.bard.api.v1alpha.ConversationTooLarge conversation_too_large = 3;
+    anthropic.bard.api.v1alpha.MessageTooLarge message_too_large = 4;
+  }
+}
+
+message MessageLimitExceeded {
+}
+
+message ConversationTooLarge {
+}
+
+message MessageTooLarge {
+  int32 message_index = 1;
+}
+
+message AuthenticationError {
+}
+
+message PermissionError {
+}
+
+message NotFoundError {
+}
+
+message ApiError {
+  anthropic.bard.api.v1alpha.ErrorClass class = 1;
+  optional int32 http_status = 2;
+}
+
+message MutationId {
+  string session_id = 1;
+  int64 version = 2;
+}
+
+message MutationAck {
+  anthropic.bard.api.v1alpha.MutationId high_water_mark = 1;
+  anthropic.bard.api.v1alpha.StopGenerationEffect stop_generation_effect = 4;
+  oneof outcome {
+    bool applied = 2;
+    anthropic.bard.api.v1alpha.MutationError error = 3;
+  }
+}
+
+message MutationError {
+  anthropic.bard.api.v1alpha.StreamError error = 1;
+  string message_id = 2;
+  string action = 3;
+}
+
+message MutationAccepted {
+  anthropic.bard.api.v1alpha.MutationId mutation_id = 1;
+}
+
+message StreamEvent {
+  anthropic.bard.api.v1alpha.Version version = 10;
+  optional int64 lease_epoch = 11;
+  oneof event {
+    anthropic.bard.api.v1alpha.ConversationUpdate update = 1;
+    anthropic.bard.api.v1alpha.ContentBlockAppend append = 2;
+    anthropic.bard.api.v1alpha.StreamError error = 3;
+    anthropic.bard.api.v1alpha.MessageLimit message_limit = 4;
+    anthropic.bard.api.v1alpha.MutationAck mutation_ack = 5;
+    anthropic.bard.api.v1alpha.Heartbeat heartbeat = 6;
+    anthropic.bard.api.v1alpha.ModelFallback model_fallback = 8;
+    anthropic.bard.api.v1alpha.ConversationDeleted conversation_deleted = 9;
+    anthropic.bard.api.v1alpha.MemoryWriteFailure memory_write_failure = 12;
+    anthropic.bard.api.v1alpha.ComposerNoticesChanged composer_notices_changed = 13;
+    anthropic.bard.api.v1alpha.MutationAccepted mutation_accepted = 14;
+    anthropic.bard.api.v1alpha.ModelChange model_change = 15;
+  }
+}

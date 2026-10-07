@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package anthropic.bard.api.v1alpha;
+
+enum RoutineToolPermission {
+  ROUTINE_TOOL_PERMISSION_UNSPECIFIED = 0;
+  ROUTINE_TOOL_PERMISSION_ALWAYS_ALLOW = 1;
+  ROUTINE_TOOL_PERMISSION_ALWAYS_ASK = 2;
+  ROUTINE_TOOL_PERMISSION_ALWAYS_DENY = 3;
+}
+
+message RoutineRunGrants {
+  repeated string builtin_allowed_tools = 1;
+  repeated string disallowed_tools = 2;
+  repeated anthropic.bard.api.v1alpha.RoutineConnector connectors = 3;
+}
+
+message RoutineConnector {
+  string server_uuid = 1;
+  string server_name = 2;
+  repeated anthropic.bard.api.v1alpha.RoutineToolPolicy tools = 3;
+  string url = 4;
+  string transport_type = 5;
+  string display_name = 6;
+}
+
+message RoutineToolPolicy {
+  string tool_name = 1;
+  anthropic.bard.api.v1alpha.RoutineToolPermission permission = 2;
+}

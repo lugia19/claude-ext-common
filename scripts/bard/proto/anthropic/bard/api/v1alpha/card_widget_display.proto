@@ -1,0 +1,153 @@
+syntax = "proto3";
+
+package anthropic.bard.api.v1alpha;
+
+enum QuizMode {
+  QUIZ_MODE_UNSPECIFIED = 0;
+  QUIZ_MODE_QUIZ = 1;
+  QUIZ_MODE_FLASHCARDS = 2;
+}
+
+enum ChartStyle {
+  CHART_STYLE_UNSPECIFIED = 0;
+  CHART_STYLE_LINE = 1;
+  CHART_STYLE_BAR = 2;
+  CHART_STYLE_SCATTER = 3;
+}
+
+enum ItemListCardStyle {
+  ITEM_LIST_CARD_STYLE_UNSPECIFIED = 0;
+  ITEM_LIST_CARD_STYLE_ILLUSTRATED = 1;
+}
+
+enum ItemListCardIllustrationKind {
+  ITEM_LIST_CARD_ILLUSTRATION_KIND_UNSPECIFIED = 0;
+  ITEM_LIST_CARD_ILLUSTRATION_KIND_DOCUMENT = 1;
+  ITEM_LIST_CARD_ILLUSTRATION_KIND_SPREADSHEET = 2;
+  ITEM_LIST_CARD_ILLUSTRATION_KIND_PRESENTATION = 3;
+  ITEM_LIST_CARD_ILLUSTRATION_KIND_DIAGRAM = 4;
+  ITEM_LIST_CARD_ILLUSTRATION_KIND_SCHEDULED_TASK = 5;
+  ITEM_LIST_CARD_ILLUSTRATION_KIND_PROTOTYPE = 6;
+}
+
+enum NextStepOfferScenario {
+  NEXT_STEP_OFFER_SCENARIO_UNSPECIFIED = 0;
+  NEXT_STEP_OFFER_SCENARIO_ANSWER_TO_WORK = 1;
+  NEXT_STEP_OFFER_SCENARIO_NEXT_AFTER_COMPLETION = 2;
+}
+
+enum NextStepDeliverable {
+  NEXT_STEP_DELIVERABLE_UNSPECIFIED = 0;
+  NEXT_STEP_DELIVERABLE_BUILD_DOC = 1;
+  NEXT_STEP_DELIVERABLE_BUILD_SHEET = 2;
+  NEXT_STEP_DELIVERABLE_MAKE_DECK = 3;
+  NEXT_STEP_DELIVERABLE_WRITE_BRIEF = 4;
+  NEXT_STEP_DELIVERABLE_DRAFT_EMAIL = 5;
+  NEXT_STEP_DELIVERABLE_MAKE_TASK_LIST = 6;
+}
+
+enum NextStepScheduleFrequency {
+  NEXT_STEP_SCHEDULE_FREQUENCY_UNSPECIFIED = 0;
+  NEXT_STEP_SCHEDULE_FREQUENCY_DAILY = 1;
+  NEXT_STEP_SCHEDULE_FREQUENCY_WEEKDAYS = 2;
+  NEXT_STEP_SCHEDULE_FREQUENCY_WEEKLY = 3;
+  NEXT_STEP_SCHEDULE_FREQUENCY_MONTHLY = 4;
+}
+
+enum NextStepScheduleDay {
+  NEXT_STEP_SCHEDULE_DAY_UNSPECIFIED = 0;
+  NEXT_STEP_SCHEDULE_DAY_MONDAY = 1;
+  NEXT_STEP_SCHEDULE_DAY_TUESDAY = 2;
+  NEXT_STEP_SCHEDULE_DAY_WEDNESDAY = 3;
+  NEXT_STEP_SCHEDULE_DAY_THURSDAY = 4;
+  NEXT_STEP_SCHEDULE_DAY_FRIDAY = 5;
+  NEXT_STEP_SCHEDULE_DAY_SATURDAY = 6;
+  NEXT_STEP_SCHEDULE_DAY_SUNDAY = 7;
+}
+
+message QuizDisplay {
+  string title = 1;
+  repeated anthropic.bard.api.v1alpha.QuizQuestion questions = 2;
+  anthropic.bard.api.v1alpha.QuizMode initial_mode = 3;
+  string summary = 4;
+}
+
+message QuizQuestion {
+  string prompt = 1;
+  repeated anthropic.bard.api.v1alpha.QuizOption options = 2;
+  string explanation = 3;
+  string hint = 4;
+  string correct_feedback = 5;
+  string incorrect_feedback = 6;
+}
+
+message QuizOption {
+  string text = 1;
+  bool is_correct = 2;
+}
+
+message TranslationDisplay {
+  string source_language_name = 1;
+  string target_language_name = 2;
+  string source_language_tag = 3;
+  string target_language_tag = 4;
+  string source_text = 5;
+  string translated_text = 6;
+  string pronunciation = 7;
+  string summary = 8;
+}
+
+message ChartDisplay {
+  anthropic.bard.api.v1alpha.ChartStyle style = 1;
+  string title = 2;
+  repeated anthropic.bard.api.v1alpha.ChartSeries series = 3;
+  repeated string x_labels = 4;
+  anthropic.bard.api.v1alpha.ChartAxis x_axis = 5;
+  anthropic.bard.api.v1alpha.ChartAxis y_axis = 6;
+}
+
+message ChartSeries {
+  string name = 1;
+  repeated anthropic.bard.api.v1alpha.ChartValue values = 2;
+  repeated anthropic.bard.api.v1alpha.ChartPoint points = 3;
+}
+
+message ChartValue {
+  optional double value = 1;
+}
+
+message ChartPoint {
+  double x = 1;
+  double y = 2;
+}
+
+message ChartAxis {
+  string title = 1;
+  optional double min = 2;
+  optional double max = 3;
+  bool log_scale = 4;
+}
+
+message ItemListCardIllustration {
+  anthropic.bard.api.v1alpha.ItemListCardIllustrationKind kind = 1;
+  string label = 2;
+}
+
+message NextStepOfferDisplay {
+  oneof offer {
+    anthropic.bard.api.v1alpha.NextStepDeliverableOffer build = 1;
+    anthropic.bard.api.v1alpha.NextStepScheduleOffer schedule = 2;
+  }
+}
+
+message NextStepDeliverableOffer {
+  anthropic.bard.api.v1alpha.NextStepOfferScenario scenario = 1;
+  anthropic.bard.api.v1alpha.NextStepDeliverable deliverable = 2;
+}
+
+message NextStepScheduleOffer {
+  anthropic.bard.api.v1alpha.NextStepScheduleFrequency frequency = 1;
+  anthropic.bard.api.v1alpha.NextStepScheduleDay day_of_week = 2;
+  optional int32 hour = 3;
+  optional int32 minute = 4;
+}

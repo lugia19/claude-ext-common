@@ -1,0 +1,606 @@
+syntax = "proto3";
+
+package anthropic.bard.api.v1alpha;
+
+import "anthropic/bard/api/v1alpha/content.proto";
+import "google/protobuf/timestamp.proto";
+
+message CorbelConversation {
+  enum ServedFrom {
+    SERVED_FROM_UNSPECIFIED = 0;
+    SERVED_FROM_CHANNEL = 1;
+  }
+  string agent_name = 1;
+  string time_zone = 2;
+  repeated anthropic.bard.api.v1alpha.CorbelPendingSpawn pending_spawns = 3;
+  repeated anthropic.bard.api.v1alpha.CorbelSessionBind session_binds = 4;
+  repeated anthropic.bard.api.v1alpha.CorbelRoutine routines = 5;
+  string older_posts_cursor = 6;
+  optional bool serves_set_reaction = 7;
+  optional bool serves_edit_message = 8;
+  string earlier_chat_cursor = 9;
+  optional bool serves_card_press = 10;
+  repeated anthropic.bard.api.v1alpha.CorbelCommand commands = 11;
+  optional bool serves_draft_send = 12;
+  optional bool holds_pressed_cards = 13;
+  optional anthropic.bard.api.v1alpha.CorbelConversation.ServedFrom served_from = 15;
+}
+
+message CorbelPendingSpawn {
+  string thread_root_message_id = 1;
+  string title = 2;
+  google.protobuf.Timestamp started_at = 3;
+}
+
+message CorbelSessionBind {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    KIND_TASK = 1;
+    KIND_HELPER = 2;
+    KIND_COORDINATOR_UPGRADE = 3;
+  }
+  string session_id = 1;
+  string thread_root_message_id = 2;
+  string title = 3;
+  anthropic.bard.api.v1alpha.CorbelSessionBind.Kind kind = 4;
+  bool working = 5;
+  google.protobuf.Timestamp bound_at = 6;
+  string task_thread_channel_message_id = 7;
+}
+
+message CorbelRoutine {
+  string routine_id = 1;
+  string title = 2;
+  string schedule_summary = 3;
+  bool enabled = 4;
+  google.protobuf.Timestamp next_fire_at = 5;
+}
+
+message CorbelCommand {
+  string name = 1;
+  string description = 2;
+}
+
+message CorbelEarlierChatRequest {
+  optional string channel_id = 1;
+}
+
+message CorbelEarlierChatPage {
+  enum Route {
+    ROUTE_UNSPECIFIED = 0;
+    ROUTE_DEFAULT_AGENT = 1;
+    ROUTE_NAMED_CHANNEL = 2;
+    ROUTE_HUB_ONLY = 3;
+  }
+  repeated anthropic.bard.api.v1alpha.CorbelEarlierChatMessage hearth_messages = 1;
+  anthropic.bard.api.v1alpha.CorbelEarlierChatPosition floor = 2;
+  bool hearth_could_not_load = 3;
+  bool hearth_ended_short = 4;
+  anthropic.bard.api.v1alpha.CorbelEarlierChatPage.Route route = 5;
+  string walk_id = 6;
+}
+
+message CorbelEarlierChatMessage {
+  message Attachment {
+    string file_id = 1;
+    optional string filename = 2;
+    optional string mime_type = 3;
+    optional int64 size_bytes = 4;
+    optional int32 image_width = 5;
+    optional int32 image_height = 6;
+  }
+  message Reaction {
+    string emoji = 1;
+    optional string glyph = 2;
+    int64 count = 3;
+    bool viewer_reacted = 4;
+  }
+  message Output {
+    string id = 1;
+    string kind = 2;
+    string filename = 3;
+    string provenance_reply_id = 4;
+    google.protobuf.Timestamp created_at = 5;
+    string href = 6;
+    string href_host = 7;
+    string frame_slug = 8;
+    optional int64 size_bytes = 9;
+  }
+  string id = 1;
+  string channel_message_id = 2;
+  string thread_root_id = 3;
+  optional string author_account_id = 4;
+  optional string author_session_id = 5;
+  optional string author_agent_id = 6;
+  optional bool author_session_routine_fired = 7;
+  optional string body = 8;
+  bool server_notice = 9;
+  repeated anthropic.bard.api.v1alpha.CorbelEarlierChatMessage.Attachment attachments = 10;
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp edited_at = 12;
+  optional string transport = 13;
+  repeated anthropic.bard.api.v1alpha.CorbelEarlierChatMessage.Reaction reactions = 14;
+  repeated anthropic.bard.api.v1alpha.CorbelEarlierChatMessage.Output attached_outputs = 15;
+  optional string client_message_id = 16;
+}
+
+message CorbelEarlierChatPosition {
+  google.protobuf.Timestamp at = 1;
+  string message_id = 2;
+}
+
+message CorbelUserChannelMessage {
+  optional string channel_message_id = 1;
+}
+
+message CorbelUserMessageCopy {
+}
+
+message CorbelMessageOrigin {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    KIND_AGENT_POST = 1;
+    KIND_ROUTINE = 2;
+    KIND_HELPER = 3;
+    KIND_OTHER_AGENT = 4;
+    KIND_SYSTEM = 5;
+    KIND_EPISODE_REPLY = 6;
+  }
+  anthropic.bard.api.v1alpha.CorbelMessageOrigin.Kind kind = 1;
+  string author_name = 2;
+  string routine_id = 3;
+  string session_id = 4;
+  bool attention = 5;
+  string transcript_message_id = 6;
+  google.protobuf.Timestamp edited_at = 7;
+  bool has_lead_in = 8;
+  google.protobuf.Timestamp replied_at = 9;
+  string hearth_message_id = 10;
+  bool streaming = 11;
+  string model_message_id = 12;
+  string model_thread_root_id = 13;
+  string channel_message_id = 14;
+  optional int32 reply_from_group_index = 15;
+  optional int32 reply_from_block_index = 16;
+}
+
+message CorbelThreadRef {
+  string thread_root_message_id = 1;
+  string reply_to_message_id = 2;
+}
+
+message CorbelReactions {
+  repeated anthropic.bard.api.v1alpha.CorbelReaction reactions = 1;
+}
+
+message CorbelReaction {
+  string emoji = 1;
+  int32 count = 2;
+  bool user_reacted = 3;
+  bool agent_reacted = 4;
+  optional string glyph = 5;
+}
+
+message CorbelThreadState {
+  enum ResolvedBy {
+    RESOLVED_BY_UNSPECIFIED = 0;
+    RESOLVED_BY_USER = 1;
+    RESOLVED_BY_AGENT = 2;
+    RESOLVED_BY_SYSTEM = 3;
+  }
+  google.protobuf.Timestamp resolved_at = 1;
+  anthropic.bard.api.v1alpha.CorbelThreadState.ResolvedBy resolved_by = 2;
+}
+
+message CorbelCoordinatorTurn {
+  bool no_reply = 1;
+  string no_reply_reason = 2;
+}
+
+message CorbelSuggestedReplies {
+  repeated string answers = 1;
+  bool expects_one_time_code = 2;
+}
+
+message CorbelNotice {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    KIND_INFO = 1;
+    KIND_FAILURE = 2;
+    KIND_WAITING = 3;
+  }
+  enum LimitWindow {
+    LIMIT_WINDOW_UNSPECIFIED = 0;
+    LIMIT_WINDOW_FIVE_HOUR = 1;
+    LIMIT_WINDOW_SEVEN_DAY = 2;
+  }
+  anthropic.bard.api.v1alpha.CorbelNotice.Kind kind = 1;
+  string code = 2;
+  string text = 3;
+  google.protobuf.Timestamp retry_at = 4;
+  string subject_message_id = 5;
+  bool usage_limit = 6;
+  anthropic.bard.api.v1alpha.CorbelNotice.LimitWindow limit_window = 7;
+  google.protobuf.Timestamp resets_at = 8;
+  optional bool retryable = 9;
+}
+
+message CorbelIssueReport {
+  enum Category {
+    CATEGORY_UNSPECIFIED = 0;
+    CATEGORY_BLOCKED_SITE = 1;
+    CATEGORY_SIGN_IN_FAILED = 2;
+    CATEGORY_CONNECTOR_PROBLEM = 3;
+    CATEGORY_BROWSER_PROBLEM = 4;
+    CATEGORY_TASK_FAILED = 5;
+    CATEGORY_OTHER = 6;
+    CATEGORY_FEATURE_REQUEST = 7;
+  }
+  string report_id = 1;
+  anthropic.bard.api.v1alpha.CorbelIssueReport.Category category = 2;
+  string summary = 3;
+  repeated string tags = 4;
+}
+
+message CorbelConnectorSuggestion {
+  repeated string directory_uuids = 1;
+  string text = 2;
+}
+
+message CorbelAgentSetup {
+  string name = 1;
+  string purpose = 2;
+  anthropic.bard.api.v1alpha.CorbelAgentLook look = 3;
+}
+
+message CorbelAgentLook {
+  string face = 1;
+  string tint = 2;
+  string hat = 3;
+}
+
+message CorbelSkillProposal {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    KIND_NEW = 1;
+    KIND_IMPROVEMENT = 2;
+  }
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    STATE_PENDING = 1;
+    STATE_SAVED = 2;
+    STATE_DISMISSED = 3;
+  }
+  string proposal_id = 1;
+  string name = 2;
+  anthropic.bard.api.v1alpha.CorbelSkillProposal.Kind kind = 3;
+  string target = 4;
+  string description = 5;
+  string instructions = 6;
+  anthropic.bard.api.v1alpha.CorbelSkillProposal.State state = 7;
+  google.protobuf.Timestamp resolved_at = 8;
+  string saved_skill_name = 9;
+  google.protobuf.Timestamp expires_at = 10;
+}
+
+message CorbelConversationInit {
+  string agent_name = 1;
+  string time_zone = 2;
+  optional bool helper = 3;
+  optional string purpose = 4;
+  optional bool room = 5;
+  optional string channel_id = 6;
+}
+
+message CorbelSend {
+  string thread_root_message_id = 1;
+  string reply_to_message_id = 2;
+  string hearth_message_uuid = 3;
+  string surface = 4;
+  optional bool hearth_has_attachments = 5;
+}
+
+message CorbelUserIngress {
+  string surface = 1;
+}
+
+message CorbelRelay {
+  string event_kind = 1;
+  anthropic.bard.api.v1alpha.CorbelMessageOrigin origin = 2;
+  anthropic.bard.api.v1alpha.CorbelRelayEntry entry = 3;
+  google.protobuf.Timestamp at = 4;
+  string producer_event_id = 5;
+  bool person_action = 6;
+}
+
+message CorbelRelayEntry {
+  string entry_id = 1;
+  string text = 2;
+  string thread_root_message_id = 3;
+  string reply_to_message_id = 4;
+  string source_thread_root_id = 5;
+  string source_reply_to_id = 6;
+  string source_message_id = 7;
+}
+
+message CorbelSetReaction {
+  string message_id = 1;
+  string emoji = 2;
+  optional bool reacted = 3;
+}
+
+message CorbelEditMessage {
+  string message_id = 1;
+  string text = 2;
+}
+
+message CorbelResolveSkillProposal {
+  enum Outcome {
+    OUTCOME_UNSPECIFIED = 0;
+    OUTCOME_SAVED = 1;
+    OUTCOME_DISMISSED = 2;
+  }
+  string message_id = 1;
+  anthropic.bard.api.v1alpha.CorbelResolveSkillProposal.Outcome outcome = 2;
+  string saved_skill_name = 3;
+}
+
+message CorbelUserEdit {
+  google.protobuf.Timestamp edited_at = 1;
+}
+
+message CorbelMessageLinks {
+  repeated anthropic.bard.api.v1alpha.CorbelMessageLink links = 1;
+}
+
+message CorbelMessageLink {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    KIND_THREAD = 1;
+    KIND_MESSAGE = 2;
+  }
+  string href = 1;
+  anthropic.bard.api.v1alpha.CorbelMessageLink.Kind kind = 2;
+  string thread_root_message_id = 3;
+  string message_id = 4;
+}
+
+message CorbelAttachedOutputs {
+  repeated anthropic.bard.api.v1alpha.CorbelAttachedOutput outputs = 1;
+}
+
+message CorbelAttachedOutput {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    KIND_FILE = 1;
+    KIND_LINK = 2;
+    KIND_FRAME = 3;
+  }
+  string handle = 1;
+  anthropic.bard.api.v1alpha.CorbelAttachedOutput.Kind kind = 2;
+  string filename = 3;
+  string title = 4;
+  string href = 5;
+  string href_host = 6;
+  string frame_slug = 7;
+  google.protobuf.Timestamp created_at = 8;
+  optional int64 size_bytes = 9;
+  string channel_id = 10;
+}
+
+message CorbelBeginFirstRun {
+  anthropic.bard.api.v1alpha.CorbelConversationInit init = 1;
+  optional string work_function = 2;
+  optional string language = 3;
+}
+
+message CorbelOpenAgent {
+  anthropic.bard.api.v1alpha.CorbelConversationInit init = 1;
+}
+
+message CorbelOpenAgentResult {
+  bool created = 1;
+}
+
+message CorbelBlockCard {
+  enum Tone {
+    TONE_UNSPECIFIED = 0;
+    TONE_NEUTRAL = 1;
+    TONE_POSITIVE = 2;
+    TONE_NEGATIVE = 3;
+    TONE_ATTENTION = 4;
+  }
+  message Source {
+    string directory_uuid = 1;
+    string name = 2;
+    string icon_url = 3;
+  }
+  message Block {
+    oneof block {
+      anthropic.bard.api.v1alpha.CorbelBlockCard.HeaderBlock header = 1;
+      anthropic.bard.api.v1alpha.CorbelBlockCard.SectionBlock section = 2;
+      anthropic.bard.api.v1alpha.CorbelBlockCard.FieldsBlock fields = 3;
+      anthropic.bard.api.v1alpha.CorbelBlockCard.ColumnsBlock columns = 4;
+      anthropic.bard.api.v1alpha.CorbelBlockCard.TableBlock table = 5;
+      anthropic.bard.api.v1alpha.CorbelBlockCard.ProgressBlock progress = 6;
+      anthropic.bard.api.v1alpha.CorbelBlockCard.ContextBlock context = 7;
+      anthropic.bard.api.v1alpha.CorbelBlockCard.DividerBlock divider = 8;
+      anthropic.bard.api.v1alpha.CorbelBlockCard.ActionsBlock actions = 9;
+      anthropic.bard.api.v1alpha.CorbelBlockCard.RouteBlock route = 10;
+    }
+  }
+  message HeaderBlock {
+    anthropic.bard.api.v1alpha.CorbelBlockCard.Text text = 1;
+    anthropic.bard.api.v1alpha.CorbelBlockCard.Badge accessory = 2;
+  }
+  message SectionBlock {
+    anthropic.bard.api.v1alpha.CorbelBlockCard.Text text = 1;
+    string label = 2;
+    anthropic.bard.api.v1alpha.CorbelBlockCard.Element accessory = 3;
+  }
+  message FieldsBlock {
+    repeated anthropic.bard.api.v1alpha.CorbelBlockCard.Cell fields = 1;
+  }
+  message ColumnsBlock {
+    repeated anthropic.bard.api.v1alpha.CorbelBlockCard.Cell columns = 1;
+  }
+  message TableBlock {
+    message Row {
+      repeated anthropic.bard.api.v1alpha.CorbelBlockCard.Text cells = 1;
+    }
+    repeated string headers = 1;
+    repeated anthropic.bard.api.v1alpha.CorbelBlockCard.TableBlock.Row rows = 2;
+  }
+  message ProgressBlock {
+    string label = 1;
+    double value = 2;
+    double max = 3;
+    anthropic.bard.api.v1alpha.CorbelBlockCard.Tone tone = 4;
+  }
+  message ContextBlock {
+    anthropic.bard.api.v1alpha.CorbelBlockCard.Text text = 1;
+  }
+  message DividerBlock {
+  }
+  message ActionsBlock {
+    repeated anthropic.bard.api.v1alpha.CorbelBlockCard.Element elements = 1;
+  }
+  message RouteBlock {
+    message Carrier {
+      string code = 1;
+      string domain = 2;
+    }
+    message LocalTime {
+      int32 year = 1;
+      int32 month = 2;
+      int32 day = 3;
+      int32 hour = 4;
+      int32 minute = 5;
+    }
+    message Stop {
+      string place = 1;
+      anthropic.bard.api.v1alpha.CorbelBlockCard.RouteBlock.LocalTime at = 2;
+      anthropic.bard.api.v1alpha.CorbelBlockCard.RouteBlock.LocalTime was = 3;
+    }
+    message Leg {
+      anthropic.bard.api.v1alpha.CorbelBlockCard.RouteBlock.Stop from = 1;
+      anthropic.bard.api.v1alpha.CorbelBlockCard.RouteBlock.Stop to = 2;
+      int32 minutes = 3;
+      repeated string via = 4;
+    }
+    string title = 1;
+    string price = 2;
+    string note = 3;
+    anthropic.bard.api.v1alpha.CorbelBlockCard.RouteBlock.Carrier carrier = 4;
+    repeated anthropic.bard.api.v1alpha.CorbelBlockCard.RouteBlock.Leg legs = 5;
+    anthropic.bard.api.v1alpha.CorbelBlockCard.Element accessory = 6;
+  }
+  message Cell {
+    string label = 1;
+    anthropic.bard.api.v1alpha.CorbelBlockCard.Text value = 2;
+    anthropic.bard.api.v1alpha.CorbelBlockCard.Tone tone = 3;
+  }
+  message Element {
+    oneof element {
+      anthropic.bard.api.v1alpha.CorbelBlockCard.Button button = 1;
+      anthropic.bard.api.v1alpha.CorbelBlockCard.Badge badge = 2;
+    }
+  }
+  message Button {
+    enum Style {
+      STYLE_UNSPECIFIED = 0;
+      STYLE_DEFAULT = 1;
+      STYLE_PRIMARY = 2;
+      STYLE_DANGER = 3;
+    }
+    string id = 1;
+    string label = 2;
+    anthropic.bard.api.v1alpha.CorbelBlockCard.Button.Style style = 3;
+    string done_label = 4;
+  }
+  message Badge {
+    anthropic.bard.api.v1alpha.CorbelBlockCard.Text text = 1;
+    anthropic.bard.api.v1alpha.CorbelBlockCard.Tone tone = 2;
+  }
+  message Text {
+    oneof text {
+      string plain = 1;
+      anthropic.bard.api.v1alpha.CorbelBlockCard.Time time = 2;
+    }
+  }
+  message Time {
+    enum Style {
+      STYLE_UNSPECIFIED = 0;
+      STYLE_CLOCK = 1;
+      STYLE_COUNTDOWN = 2;
+    }
+    google.protobuf.Timestamp at = 1;
+    anthropic.bard.api.v1alpha.CorbelBlockCard.Time.Style style = 2;
+  }
+  anthropic.bard.api.v1alpha.CorbelBlockCard.Source source = 1;
+  repeated anthropic.bard.api.v1alpha.CorbelBlockCard.Block blocks = 2;
+  string channel_message_id = 3;
+}
+
+message CorbelCardPress {
+  string card_message_id = 1;
+  string action_id = 2;
+  google.protobuf.Timestamp card_edited_at = 3;
+}
+
+message CorbelComposed {
+  message CardPress {
+    string card_message_id = 1;
+    string action_id = 2;
+    string label = 3;
+  }
+  oneof composed {
+    anthropic.bard.api.v1alpha.CorbelComposed.CardPress card_press = 1;
+  }
+}
+
+message CorbelMessageCompose {
+  enum SendableField {
+    SENDABLE_FIELD_UNSPECIFIED = 0;
+    SENDABLE_FIELD_BODY = 1;
+    SENDABLE_FIELD_SUBJECT = 2;
+  }
+  anthropic.bard.api.v1alpha.MessageComposeDisplay draft = 1;
+  string to = 2;
+  string from_account = 3;
+  repeated anthropic.bard.api.v1alpha.CorbelMessageCompose.SendableField sends = 4;
+}
+
+message CorbelTurnOutcome {
+  enum Outcome {
+    OUTCOME_UNSPECIFIED = 0;
+    OUTCOME_ANSWERED = 1;
+    OUTCOME_NO_REPLY = 2;
+    OUTCOME_UNANSWERED = 3;
+    OUTCOME_FAILED = 4;
+  }
+  anthropic.bard.api.v1alpha.CorbelTurnOutcome.Outcome outcome = 1;
+}
+
+message CorbelThreadProgress {
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    STATUS_NEEDS_YOU = 1;
+    STATUS_UPDATE = 2;
+    STATUS_DONE = 3;
+    STATUS_FAILED = 4;
+  }
+  string task_thread_channel_message_id = 1;
+  string task_id = 2;
+  anthropic.bard.api.v1alpha.CorbelThreadProgress.Status status = 3;
+  int32 seq = 4;
+  string about_channel_message_id = 5;
+  string about_message_text = 6;
+  bool about_message_text_truncated = 7;
+  google.protobuf.Timestamp about_message_edited_at = 8;
+  bool about_message_has_attachments = 9;
+  string session_id = 10;
+}
+
+message CorbelReportConnectorsChanged {
+}

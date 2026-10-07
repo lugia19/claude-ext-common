@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package anthropic.bard.api.v1alpha;
+
+message ImageAnnotationDisplay {
+  int32 image_index = 1;
+  int32 image_width = 2;
+  int32 image_height = 3;
+  repeated anthropic.bard.api.v1alpha.ImageAnnotationRegion regions = 4;
+}
+
+message ImageAnnotationRegion {
+  string label = 1;
+  bool confident = 2;
+  oneof geometry {
+    anthropic.bard.api.v1alpha.ImageAnnotationBox box = 3;
+    anthropic.bard.api.v1alpha.ImageAnnotationOutline outline = 4;
+  }
+}
+
+message ImageAnnotationBox {
+  double x1 = 1;
+  double y1 = 2;
+  double x2 = 3;
+  double y2 = 4;
+}
+
+message ImageAnnotationOutline {
+  string path = 1;
+}
