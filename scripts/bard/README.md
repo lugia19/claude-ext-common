@@ -144,7 +144,19 @@ with `i` = the lowest index served.
   doesn't seem to call it, but calling it by hand on a 2,447-message chat returned every message
   and branch (480 fork points) in one 7.2MB response in 2.4s, with no cursor. It's the stand-in for
   the legacy tree GET if that ever goes away (same display-shaped content, see below).
-  `known_revision_ns` allows cheap not-modified checks.
+  `known_revision_ns` allows cheap not-modified checks. More on it (2026-10-08):
+  - `max_response_bytes` is a **ceiling, not a page size**: set below the conversation's size, the
+    call fails with 429 `resource_exhausted` "This conversation is too large to load right now"
+    (`RequestTooLargeError`). Unset or large, a 2,942-message chat came back whole (5.7MB, ~1.5s).
+  - Connect's **JSON codec works**: `content-type: application/json`, body `{"conversationId": …}`,
+    and the response is JSON with camelCase fields (`postTokens`, `createdAt`), so no protobuf is
+    needed to call it.
+  - **Legacy (non-merged) accounts get 403** `permission_denied` "This feature is not included in
+    your current plan".
+  - **Extension contexts get 403** `permission_denied` "origin not allowed": the RPC endpoints
+    check `Origin`, and a background/extension-page fetch sends `chrome-extension://…`. The legacy
+    `/api/` endpoints don't check it. So calling any RPC needs the page's origin (MAIN world, or a
+    content script), unless a header rewrite turns out to be accepted (untested).
 - Content is display-shaped, but **close to the legacy tree in substance**. Measured on the same
   2,447-message chat:
 
@@ -253,6 +265,28 @@ current branch) compacted once on 2026-08-21:
 - A second compaction in the same chat: `pre_tokens: 196497` (right at Opus 4.6's 200K window,
   so `pre_tokens` is almost certainly the full input, system prompt included),
   `post_tokens: 9916` (the summary grew with the history).
+
+**Live, and what it replaces** (2026-10-08, same chat, Haiku 4.5, triggered with ~40K-token filler
+messages):
+- Sequence on the stream: `STATUS_RUNNING`, then `STATUS_KIND_RUNNING_COMPACTION`; `message_limit`
+  arrives during the compaction; the reply message appears and streams; then **one frame carries
+  `STATUS_IDLE`, the reply's end and the divider** (`pre_tokens: 177720, post_tokens: 4441`). A
+  fourth one in the same chat: `post_tokens: 2629`.
+- The divider has a **higher index than the reply**, so "the highest-index assistant message" of a
+  turn is the divider, not the reply. Skip it when looking for the turn's message.
+- The opening snapshot includes existing dividers with their extras (only within its window).
+- **Everything up to and including the divider is gone**, the compaction turn's own message too:
+  asked without tools, the model couldn't quote a line from that turn's 40K message and described
+  its context as system prompt, then the summary (with a short "continues from a previous
+  conversation" preamble and the "Continue the conversation…" instruction), then later messages.
+- **`post_tokens` overstates the summary in context**: the model reproduced the summary (all nine
+  sections, 9,590 chars) and it counted 2,525 tokens (Opus 4.6 tokenizer, Haiku 4.5's) / 3,515
+  (Opus 4.7's), against `post_tokens: 4441`. Possibly the compaction call's output including its
+  stripped `<analysis>` section; unverified.
+- **Too big even after compacting**: a 100K-token message on Haiku 4.5 ran the compaction, then
+  ended as an empty assistant message with `STOP_REASON_REFUSAL` and no divider; the page shows
+  "Paused: This session is too long for this model". In the tree, that refusal is an empty
+  assistant message whose parent is the human message (a divider's parent is the reply).
 
 ### Fixed overhead: the system prompt (2026-10-07)
 
