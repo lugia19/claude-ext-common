@@ -293,6 +293,19 @@ messages):
 
 ### Fixed overhead: the system prompt (2026-10-07)
 
+> **Obsolete variant (2026-10-08).** Everything below was measured in one chat created within hours
+> of the account's switchover to the merged experience, and that chat is pinned to an early harness:
+> it opens "You are Claude Code…" and has no search/copyright/image-search sections. Fresh chats
+> (Opus 5.5 and Haiku 4.5 alike, so not model-dependent) get the current variant: it opens with a
+> `<voice_note>` line then `<claude_behavior>`, includes `<search_instructions>` (copyright,
+> image search), `<memory_system>`, `<end_conversation_tool_info>`, `<preferences_info>`, puts the
+> 60 loaded tool schemas after the behavior text, and keeps `<available_skills>` in the system
+> prompt. Setting up the environment doesn't change the system prompt or the loaded tools; it adds
+> one turn-level block after the first tool call (environment, model, a 40-name deferred-tool list,
+> agent types, MCP server instructions, a second skills list, attribution reminders). Before that,
+> the first turn's reminder lists only 12 deferred tools. Re-measure on a current chat before using
+> any number below.
+
 The merged experience runs the **Claude Code harness** on claude.ai (the prompt opens "You are
 Claude Code, Anthropic's official CLI for Claude, running within the Claude Agent SDK."), then the
 claude.ai `<claude_behavior>` prose, an `<agentic_behavior>` workspace section, reminders and ~61
