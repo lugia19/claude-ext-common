@@ -31,8 +31,13 @@ const pinned = git(['ls-tree', 'HEAD', 'common']).split(/\s+/)[2];
 if (!pinned) fail('This repo has no common/ submodule in HEAD.');
 
 // web-ext packs every file, so anything not in the commit counts, whatever the user's git config
-// hides: untracked files, and ignored ones.
-if (git(['-C', 'common', 'status', '--porcelain', '--untracked-files=all', '--ignored'])) {
+// hides: untracked files, and ignored ones. The one exception is ignored files under scripts/
+// (scripts/bard's node_modules and captures): every build.bat excludes common/scripts/** from the
+// zip, so they can't ship. Untracked files there still count, as they may be uncommitted work.
+const dirty = git(['-C', 'common', 'status', '--porcelain', '--untracked-files=all', '--ignored'])
+	.split('\n')
+	.filter(line => line && !line.startsWith('!! scripts/'));
+if (dirty.length) {
 	fail('common/ has uncommitted changes or extra files. Commit them in common (and bump the pointer), or remove them.');
 }
 

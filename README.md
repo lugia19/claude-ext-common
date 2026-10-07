@@ -111,7 +111,8 @@ All run from the extension repo's root:
   takes directories or files. Defaults to `--tables content/i18n --src content`.
 - `node common/scripts/check-common.js`: run first by each extension's `build.bat`, from the extension
   root, after checking the submodule out if it never was (the script lives in it). Stops the build
-  unless `common/` is clean (untracked and ignored files count), checked out at the commit the
+  unless `common/` is clean (untracked and ignored files count, except ignored files under
+  `scripts/`, which no build packs), checked out at the commit the
   extension pins, and that commit matches common's `main` (by content: a merge commit past the pin
   is fine). A failed fetch stops it too.
 - `node common/scripts/release.js <major|minor|patch|X.Y.Z> "<title>"`: write `update_patchnotes.txt`
@@ -127,9 +128,7 @@ All run from the extension repo's root:
   `bash common/scripts/codex-react.sh <pr> <PRRC_id> <up|down|none>`: the Codex PR review loop.
 - `scripts/bard/`: schema extraction, a schema snapshot and a traffic decoder for claude.ai's
   merged-experience Connect-RPC API, plus what we know about it. See its README. Re-extract the
-  schema before changing anything that reads that API. Unlike the rest, run it from a standalone
-  clone of this repo, not from an extension's submodule (its `npm ci` and captures would fail
-  `check-common.js`).
+  schema before changing anything that reads that API.
 
 ## License
 

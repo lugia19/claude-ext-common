@@ -10,12 +10,12 @@ up as diffs. **Re-extract before changing any code that reads this API**: it's `
 
 ## Tooling
 
-Work in a standalone claude-ext-common clone, **never** in an extension's `common/` submodule:
-`node_modules/` and `captures/` are gitignored, but `check-common.js` stops both extensions' builds
-if `common/` holds any ignored file.
+Works from an extension's `common/` submodule or a standalone clone. `node_modules/` and
+`captures/` are gitignored, and `check-common.js` lets ignored files under `scripts/` through,
+since no build packs `common/scripts/**`.
 
 ```bash
-cd scripts/bard
+cd common/scripts/bard   # or scripts/bard in a standalone clone
 npm ci                   # @bufbuild/protobuf, dev only
 ```
 
