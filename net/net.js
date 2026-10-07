@@ -484,6 +484,12 @@
 		return values;
 	}
 
+	// Map and Struct keys are data: a plain assignment of '__proto__' would hit the prototype setter
+	// (dropping the entry, or replacing the object's prototype) instead of adding a property.
+	function setOwn(obj, key, value) {
+		Object.defineProperty(obj, key, { value, enumerable: true, configurable: true, writable: true });
+	}
+
 	function concat(slices) {
 		if (slices.length === 1) return slices[0];
 		const out = new Uint8Array(slices.reduce((n, s) => n + s.length, 0));
@@ -545,7 +551,7 @@
 				const map = {};
 				for (const [slice] of value) {
 					const entry = readMapEntry(schema, ref, slice);
-					map[entry.key] = entry.value;
+					setOwn(map, entry.key, entry.value);
 				}
 				json[fieldName] = map;
 			} else if (flags & 1) {
@@ -624,7 +630,7 @@
 				const json = {};
 				for (const [slice] of fields.fields ?? []) {
 					const entry = readMapEntry(schema, [T.STRING, 'm', typeIndexOf(schema, 'google.protobuf.Value')], slice);
-					json[entry.key] = entry.value;
+					setOwn(json, entry.key, entry.value);
 				}
 				return { json };
 			}

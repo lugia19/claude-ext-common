@@ -17,7 +17,7 @@ import path from 'node:path';
 import util from 'node:util';
 import zlib from 'node:zlib';
 import { execFileSync } from 'node:child_process';
-import { fromBinary, toJson } from '@bufbuild/protobuf';
+import { create, fromBinary, toBinary, toJson } from '@bufbuild/protobuf';
 import { loadRegistry } from './registry.mjs';
 
 const here = path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
@@ -117,6 +117,41 @@ for (const file of files) {
 console.log(`decodeBard: ${stats.compared} messages compared, ${stats.skipped} skipped (unrenderable by protobuf-es)`, stats.byType);
 if (stats.notInTable.size) console.log(`  not in bard-schema.js (outside ROOTS): ${[...stats.notInTable].join(', ')}`);
 if (!stats.compared) fail('no captured messages to compare (capture some into captures/ first)');
+
+// Synthetic: map and Struct keys are data, so '__proto__' must come out as an ordinary own key.
+const own = (obj, key, value) => Object.defineProperty(obj, key, { value, enumerable: true, configurable: true, writable: true });
+const synthetic = [];
+{
+	const schema = registry.getMessage('anthropic.bard.api.v1alpha.McpToolSettings');
+	const msg = create(schema);
+	own(msg.tools, '__proto__', true);
+	msg.tools.other = false;
+	synthetic.push([schema, msg]);
+}
+{
+	const schema = registry.getMessage('anthropic.bard.api.v1alpha.MessageLimit');
+	const window = registry.getMessage('anthropic.bard.api.v1alpha.MessageLimitWindow');
+	const msg = create(schema);
+	own(msg.windows, '__proto__', create(window));
+	synthetic.push([schema, msg]);
+}
+if (inTable.has('google.protobuf.Struct')) {
+	const schema = registry.getMessage('google.protobuf.Struct');
+	const value = registry.getMessage('google.protobuf.Value');
+	const msg = create(schema);
+	own(msg.fields, '__proto__', create(value, { kind: { case: 'stringValue', value: 'x' } }));
+	synthetic.push([schema, msg]);
+}
+for (const [schema, msg] of synthetic) {
+	const bytes = toBinary(schema, msg);
+	compare(schema, bytes, 'synthetic __proto__');
+	const decoded = net.decodeBard(schema.typeName, bytes);
+	const map = decoded.tools ?? decoded.windows ?? decoded;
+	if (!Object.prototype.hasOwnProperty.call(map, '__proto__') || Object.getPrototypeOf(map) !== Object.prototype) {
+		fail(`synthetic ${schema.typeName}: '__proto__' key not kept as an own property`);
+	}
+}
+console.log(`synthetic __proto__ keys: ${synthetic.length} messages`);
 
 // ---- 2. readConnectFrames ----
 function chunked(bytes, seed) {
