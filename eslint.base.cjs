@@ -142,7 +142,10 @@ function baseConfig({ root, groups = [], libGlobals = {}, modules = [], serviceW
 		{
 			ignores: [
 				'**/node_modules/**', 'debug/**', 'web-ext-artifacts/**', '**/*.min.js',
-				'scripts/**', '**/*.mjs', '**/*.cjs', 'eslint.config.*', ...ignores,
+				'scripts/**', '**/*.mjs', '**/*.cjs', 'eslint.config.*',
+				// An extension's copy of this repo: common lints itself, from its own root.
+				'common/**',
+				...ignores,
 			],
 		},
 		js.configs.recommended,
