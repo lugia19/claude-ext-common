@@ -33,11 +33,22 @@ npm ci                   # @bufbuild/protobuf, dev only
    bodies.
 4. **Decode it.** `node decode-capture.mjs captures/x.json --compact --out captures/x.decoded.json`,
    then `node timeline.mjs captures/x.decoded.json` for one line per action and stream event.
-5. **Check the runtime decoder.** `node check-decoder.mjs` decodes every captured message with
-   `net.js`'s `decodeBard` and with protobuf-es, and fails on any difference; it also tests
-   `readConnectFrames` on the captured streams (cut into random chunks) and that older copies of
-   `net.js` / `bard-schema.js` loading later change nothing. Run it after regenerating the schema
-   or touching the decoder.
+5. **Check the runtime codec.** `node check-decoder.mjs` decodes every captured message with
+   `net.js`'s `decodeBard` and with protobuf-es, and fails on any difference. On the same captures it
+   also checks that:
+   - `encodeBard(decodeBard(x, { keepUnknown: true }))` round-trips;
+   - fields unknown to a deliberately trimmed schema survive (drift);
+   - `readConnectFrames` and `rewriteConnectStream` handle the captured streams, cut into random
+     chunks.
+
+   Without captures, those parts are skipped with a warning. These always run:
+   - synthetic fixtures for every field kind the schema uses (well-known types, Any, maps, oneofs,
+     explicit presence, unknown fields), plus `encodeBard`'s strictness;
+   - the frame rewriter: replace/split/drop, `inject` while idle, fail-open, cancellation;
+   - the load-order check (older copies of `net.js` / `bard-schema.js` loading later change
+     nothing).
+
+   Run it after regenerating the schema or touching the codec.
 
 Gotchas the scripts already handle:
 - protobuf-es strips each embedded descriptor's `dependency` list, its own well-known types
