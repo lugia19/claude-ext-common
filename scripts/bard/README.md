@@ -312,6 +312,21 @@ claude-opus-4-6 tokenizer, new = claude-opus-4-7), envelope subtracted. The trac
 | **Before the first message** | **≈ 70K / 95K** | |
 | `preferences_info` | +1,321 / +2,006 | raw dump; only sent when preferences are set |
 
+**Settings that add to it** (measured 2026-10-08 by switching them on: the outline, then the raw
+Sonnet 5.5 dump's text, spot-checked; tool schemas from the dumps; new tokenizer):
+
+| Setting | Sections | Tools | Total | Where the setting is |
+| --- | --- | --- | --- | --- |
+| Memory | `memory_filesystem` … `important_safety_reminders` (replaces the short `memory_system`), 21.2K; plus a `<user_memory_snapshot>` of the user's files | 6 `mcp__memory__*`, 3.5K | ≈ 24.8K | bootstrap `memory_mode: "melange"` |
+| Chat search | `past_chats_tools`, 2.7K | `conversation_search`, `read_conversation`, `recent_chats`, 1.0K | ≈ 3.7K | `enabled_saffron_search` |
+| Inline visualizations | `request_evaluation_checklist`, `when_to_use_visualizer_for_inline_visuals`, `visualizer_examples`, 2.8K | `mcp__visualize__read_me` / `show_widget`, 1.5K | ≈ 4.2K | `enabled_mcp_tools["6f616b42-0ed8-571e-823f-ee4aca6b7ce9:show_widget"]` (the `visualize` MCP server; absent until the switch is touched) |
+| Preferences | `preferences_info` (+ examples), 2.0K | | ≈ 2.0K + the text | `/account_profile` `conversation_preferences` |
+
+- `/api/account` does **not** reflect the memory switches (`enabled_melange` stays `null`,
+  `enabled_saffron_search` `false` with both on); the bootstrap's `account.settings` and
+  `memory_mode` do. The visualize entry shows in both.
+- Geolocation stayed "disabled" in the prompt; not measured.
+
 - **Loaded tools** (asked of Opus 5.5, Sonnet 5.5, Opus 4.6, Fable 5.1 with the environment set up
   first, so no earlier answer to anchor on): the same 60 for all of them, before and after setup.
   The deferred list grows from 12 to 40-44 names after setup. The exception: **some chats switch to
