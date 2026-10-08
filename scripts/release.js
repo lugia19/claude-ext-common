@@ -91,7 +91,13 @@ if (!/^\d/.test(bump) && git('log', '-1', '--format=%s') === `chore: release ${c
 	}
 }
 
-const dirty = git('status', '--porcelain').split('\n').filter(Boolean).map((line) => line.slice(3));
+// Paths only, from commands without status columns: git() trims its output, which would eat the
+// leading space of the first `status --porcelain` line and shift that line's path by a character.
+const dirty = [...new Set([
+	...git('diff', '--name-only').split('\n'),
+	...git('diff', '--cached', '--name-only').split('\n'),
+	...git('ls-files', '--others', '--exclude-standard').split('\n'),
+].filter(Boolean))];
 const unexpected = dirty.filter((file) => file !== NOTES);
 if (unexpected.length) fail(`Uncommitted changes besides ${NOTES}:\n  ${unexpected.join('\n  ')}`);
 
