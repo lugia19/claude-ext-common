@@ -219,8 +219,20 @@ with `i` = the lowest index served.
 
   `workspace_upgraded` says whether a conversation is upgraded now; where it happened is the first
   trunk reply using a sandbox tool (`prepare_session`, `Bash`, `Read`, …). Files sent before that
-  went in inline and stay in context. The tracker applies this to text attachments
-  (Claude-Usage-Extension, sandboxed attachments). PDFs and images (`/upload`, `files_v2`) untested.
+  went in inline and stay in context.
+
+  PDFs and images sit in the message's `files` (no longer `files_v2`). Same method, with a unique code
+  per page:
+
+  | Conversation state | What happens | Tree signal |
+  | --- | --- | --- |
+  | Not upgraded, ≤ the page cap (20 and 60 pages) | in context | `file_kind: "document"`, `document_asset.token_count` (a flat 1,570 per page) |
+  | Not upgraded, over it (120 pages) | upgrade with **no** tool call, file to `/mnt/user-data/uploads`, a "too large, Read with pages" note | `file_kind: "blob"`, no `document_asset` |
+  | Upgraded, any PDF (3, 10, 20 pages) | **not** in context; an automatic Read returns only "PDF file read: <path> (size)" | `file_kind: "document"` as usual |
+  | Upgraded, image | in context | `file_kind: "image"` |
+
+  So the cap is somewhere in 61-120 pages, and a `blob` file is a second upgrade marker, one with no
+  sandbox tool. The tracker applies all of this (Claude-Usage-Extension, sandboxed attachments).
 - **Tool results stay in context in later turns.** Two turns after a `Read` of lines 19995-19997,
   Haiku quoted all three lines exactly with tools forbidden, including text it could not have
   guessed. Both formats carry the exact `tool_result` text the model got: Claude Code's
