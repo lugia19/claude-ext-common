@@ -1137,6 +1137,12 @@
 		let closed = false;
 		let wake = null;
 		let pendingRead = null;
+		// The reporter must not break fail-open either: an error it throws is swallowed.
+		const report = (e) => {
+			try {
+				onError?.(e);
+			} catch (ignored) { /* nothing left to report it to */ }
+		};
 
 		const rewrite = async (f) => {
 			const original = [f.frame];
@@ -1144,7 +1150,7 @@
 			try {
 				result = await onFrame({ ...(await openFrame(f)), raw: f.frame });
 			} catch (e) {
-				onError?.(e);
+				report(e);
 				return original;
 			}
 			if (result === undefined || result === null) return original;
@@ -1152,7 +1158,7 @@
 			if (result instanceof Uint8Array) return [net.encodeConnectFrame(result, { endStream })];
 			// A stream has one end-of-stream frame: when splitting it, only the last piece is the end.
 			if (Array.isArray(result) && result.every(p => p instanceof Uint8Array)) return result.map((p, i) => net.encodeConnectFrame(p, { endStream: endStream && i === result.length - 1 }));
-			onError?.(new TypeError('rewriteConnectStream: onFrame must return undefined, a Uint8Array or an array of them'));
+			report(new TypeError('rewriteConnectStream: onFrame must return undefined, a Uint8Array or an array of them'));
 			return original;
 		};
 
