@@ -291,6 +291,48 @@ messages):
   "Paused: This session is too long for this model". In the tree, that refusal is an empty
   assistant message whose parent is the human message (a divider's parent is the reply).
 
+### Fixed overhead, current variant (2026-10-08)
+
+Measured on fresh chats (preferences off, memory off), counted with `count_tokens` (old =
+claude-opus-4-6 tokenizer, new = claude-opus-4-7), envelope subtracted. The tracker uses these.
+
+| Section | Old / new | Source |
+| --- | --- | --- |
+| `claude_behavior` | 4,591 / 6,728 | raw Sonnet 5.5 dump; spot-checked exact |
+| `agentic_behavior` | 8,288 / 11,186 | Haiku 4.5 transcription; Opus 4.6's independent one is 99.2% identical (8,162 / 11,028) and spot-checks are exact |
+| `search_instructions` (copyright included) | 4,505 / 6,538 | raw dump; spot-checked |
+| `using_image_search_tool` | 1,526 / 2,143 | raw dump; spot-checked |
+| `citation_instructions` | 585 / 881 | raw dump |
+| `end_conversation_tool_info` | 644 / 952 | raw dump; spot-checked |
+| `thinking_behavior` | 119 / 169 | raw dump |
+| **Behavior text** | **20,258 / 28,597** | |
+| 60 loaded tool schemas | ≈ 43,800 / 58,500 | per-tool references (`merged-tool-costs.json`), plus an allowance for the 2 `enable__…` tools with none |
+| `available_skills` (22 skills here) | 4,090 / 5,518 | Haiku 4.5 transcription; per-account |
+| Trailing text + first-turn reminders | 1,639 / 2,279 | Haiku 4.5: integrations note, repeated intro, date line, deferred names, agent types |
+| **Before the first message** | **≈ 70K / 95K** | |
+| `preferences_info` | +1,321 / +2,006 | raw dump; only sent when preferences are set |
+
+- **Loaded tools** (asked of Opus 5.5, Sonnet 5.5, Opus 4.6, Fable 5.1 with the environment set up
+  first, so no earlier answer to anchor on): the same 60 for all of them, before and after setup.
+  The deferred list grows from 12 to 40-44 names after setup. The exception: **some chats switch to
+  the Claude Code variant after setup** ("You are Claude Code…", 57 tools: `ListAgents`,
+  `ReadNotifications`, `ScheduleWakeup`, `RefreshMcpTools`, `ReportFindings`,
+  `ShowOnboardingRolePicker`, `list_repos`, `register_repo_root`, `approximate_location` added; 12
+  moved to deferred). Seen on a Fable 5.1 chat and on the 2026-10-06 recon chat, not on fresh
+  Opus 4.6 / Opus 5.5 / Sonnet 5.5 chats, so it looks per chat. It's about 7K new-tokenizer
+  smaller; the tracker ignores it.
+- When asked a second time in the same chat, models tend to repeat their earlier answer instead of
+  re-reading; ask once, in a fresh chat.
+- Getting the text: Opus 5.5's safeguards pause a verbatim request (`[reasoning_extraction]`),
+  Haiku 5.5 and (bluntly asked) Opus 4.6 decline, Haiku 4.5 usually complies with a
+  one-section-at-a-time request. Opus 4.6 also complied through the gradual flow of the first
+  measurement (estimate, count, write it to files, compare with the dumps), but flattened tool
+  schemas and elided parts. Verify any transcription with yes/no spot checks of single sentences
+  (include a decoy).
+- No data source lists the tools: `SendMessage.client_tools` is unused by the web client, the
+  bootstrap carries Cowork's prompts only, and `message_limit.context_breakdown` (which would give
+  `SYSTEM_PROMPT` / `TOOL_DEFINITIONS` tokens, measured) has never been sent to us.
+
 ### Fixed overhead: the system prompt (2026-10-07)
 
 > **Obsolete variant (2026-10-08).** Everything below was measured in one chat created within hours
