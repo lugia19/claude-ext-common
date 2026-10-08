@@ -498,6 +498,18 @@ console.log(`round trip: ${captured.length} captured messages`);
 		if (cancelled) fail('rewriteConnectStream: source cancelled although the stream ended normally');
 	}
 
+	// An inject() accepted while the source is finishing must not be lost: the source's last read
+	// resolves, inject() runs in a microtask before the pull loop resumes.
+	{
+		const src = new ReadableStream({ start(c) { c.close(); } });
+		const { stream, inject } = net.rewriteConnectStream(src, () => undefined);
+		let accepted;
+		const reading = collect(stream);
+		queueMicrotask(() => { accepted = inject(Uint8Array.from(Buffer.from('late'))); });
+		const out = net.splitConnectFrames(await reading).map(f => Buffer.from(f.payload).toString());
+		if (accepted && out.join() !== 'late') fail(`rewriteConnectStream: an accepted inject() was dropped at the end of the source (got ${JSON.stringify(out)})`);
+	}
+
 	// Cancellation reaches the source; inject() is refused afterwards.
 	{
 		let cancelled = false;

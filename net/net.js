@@ -1182,7 +1182,8 @@
 						if (r === undefined) continue; // inject() woke us
 						pendingRead = null;
 						if (r.done) {
-							closed = true;
+							closed = true; // from here on inject() refuses; frames it accepted before still go out
+							for (const frame of injected.splice(0)) controller.enqueue(frame);
 							const rest = frames.rest(); // a truncated last frame: pass it on as it came
 							if (rest.length) controller.enqueue(rest);
 							controller.close();
