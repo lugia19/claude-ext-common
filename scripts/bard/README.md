@@ -207,6 +207,20 @@ with `i` = the lowest index served.
   counting attachments naively would overstate the context by ~250k tokens. Usable signals: the
   turn that carried the file opens with a `prepare_session` tool_use, and/or later tool calls read
   `/mnt/user-data/uploads/<that file name>`. The size threshold isn't known.
+- **When an attached text file is in context** (2026-10-08, numbered-line files of 32-512KB, each
+  asked "quote line N" without tools; the tree always keeps the full `extracted_content`):
+
+  | Conversation state | What happens | Tree signal |
+  | --- | --- | --- |
+  | Not upgraded, file fits the model's window | inline, in context (512KB fine on Opus 5.5) | none |
+  | Not upgraded, doesn't fit (512KB on Haiku 4.5) | upgrade mid-turn, file to `/mnt/user-data/uploads`, **not** in context | the reply opens with a `prepare_session` tool_use |
+  | Upgraded, file ≤ ~25K tokens (32KB: 13.6K/16.8K) | read into context via a system reminder | none |
+  | Upgraded, file > ~25K tokens (64KB: 27.1K/33.5K, 128KB, 256KB) | **not** in context; only an `@`-mention of the path (plus a "too large to read all at once" note over 256KB) | none |
+
+  `workspace_upgraded` says whether a conversation is upgraded now; where it happened is the first
+  trunk reply using a sandbox tool (`prepare_session`, `Bash`, `Read`, …). Files sent before that
+  went in inline and stay in context. The tracker applies this to text attachments
+  (Claude-Usage-Extension, sandboxed attachments). PDFs and images (`/upload`, `files_v2`) untested.
 - **Tool results stay in context in later turns.** Two turns after a `Read` of lines 19995-19997,
   Haiku quoted all three lines exactly with tools forbidden, including text it could not have
   guessed. Both formats carry the exact `tool_result` text the model got: Claude Code's
