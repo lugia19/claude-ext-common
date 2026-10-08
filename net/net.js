@@ -723,7 +723,8 @@
 	// "$unknown" records appended verbatim. To build a message from scratch, also accepted: enums by
 	// number, 64-bit integers as numbers or bigints, bytes as Uint8Array.
 	// Strict, so a typo fails loudly: a property the type doesn't have throws, so does setting two
-	// members of one oneof. Fields are written in field-number order; implicit-presence zero values
+	// members of one oneof. "$unknown" records are written first, then the fields in field-number
+	// order (so an explicitly set field beats retained data in the same oneof); implicit-presence zero values
 	// are left out; explicit-presence fields and message fields are written whenever present (so
 	// parent_message_id: '' and {} are kept). null leaves a field unset (except google.protobuf.Value).
 	// Returns a Uint8Array. Appending encodeBard(type, partial) to a message's bytes merges into it
@@ -901,6 +902,10 @@
 				oneofSet.set(f[5], key);
 			}
 		}
+		// Retained unknown records go first: they can only clash with known fields through a oneof
+		// (the server added a member we don't know), and protobuf's last-wins then lets the caller's
+		// explicit fields win, instead of the retained data silently undoing an edit.
+		if (obj.$unknown) w.bytes(toBytes(obj.$unknown, `${name}.$unknown`));
 		for (const f of fieldsInOrder(schema, typeIndex)) {
 			const [no, fieldName, kind, ref, flags] = f;
 			const value = obj[fieldName];
@@ -953,7 +958,6 @@
 				}
 			}
 		}
-		if (obj.$unknown) w.bytes(toBytes(obj.$unknown, `${name}.$unknown`));
 	}
 
 	// A map entry (key = 1, value = 2) for a decodeBard-shaped key (always a string) and value.
@@ -1117,7 +1121,8 @@
 	// original bytes) and returns:
 	// - undefined: forward the frame as it was (raw, byte for byte);
 	// - a Uint8Array: forward that payload instead, as one plain frame (same end-of-stream flag);
-	// - an array of Uint8Array payloads: forward those frames (an empty array drops the frame).
+	// - an array of Uint8Array payloads: forward those frames (an empty array drops the frame); for
+	//   the end-of-stream frame, only the last of them is marked as the end.
 	// If onFrame throws (or rejects), the original frame is forwarded and onError(error) called: a bug
 	// in a patch never breaks the page's stream. inject(payload) adds a plain frame of our own, delivered
 	// at the next frame boundary, even while the source is idle; it returns false (and does nothing)
@@ -1142,7 +1147,8 @@
 			if (result === undefined || result === null) return original;
 			const endStream = !!(f.flags & FRAME_END);
 			if (result instanceof Uint8Array) return [net.encodeConnectFrame(result, { endStream })];
-			if (Array.isArray(result) && result.every(p => p instanceof Uint8Array)) return result.map(p => net.encodeConnectFrame(p, { endStream }));
+			// A stream has one end-of-stream frame: when splitting it, only the last piece is the end.
+			if (Array.isArray(result) && result.every(p => p instanceof Uint8Array)) return result.map((p, i) => net.encodeConnectFrame(p, { endStream: endStream && i === result.length - 1 }));
 			onError?.(new TypeError('rewriteConnectStream: onFrame must return undefined, a Uint8Array or an array of them'));
 			return original;
 		};

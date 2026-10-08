@@ -385,6 +385,25 @@ console.log(`round trip: ${captured.length} captured messages`);
 			if (!String(e.message).startsWith('encodeBard:')) fail(`encodeBard ${label}: unexpected error ${e.message}`);
 		}
 	};
+	// A stale schema missing a oneof member the server sends: retained in $unknown, it must not undo
+	// an edit selecting a known member of the same oneof.
+	{
+		const full = globalThis.ClaudeExtBardSchema;
+		const stale = { ...full, types: full.types.map(t => (t[0] === '.ModelId' ? [t[0], 'm', t[2].filter(f => f[1] !== 'identifier'), ...t.slice(3)] : t)) };
+		const serverBytes = toBinary(ModelId, create(ModelId, { id: { case: 'identifier', value: 'claude-new' } }));
+		let edited;
+		globalThis.ClaudeExtBardSchema = stale;
+		try {
+			const obj = net.decodeBard('ModelId', serverBytes, { keepUnknown: true });
+			if (!obj.$unknown) fail('stale oneof: the unknown member was not retained');
+			obj.default = true; // the caller picks a known member
+			edited = net.encodeBard('ModelId', obj);
+		} finally {
+			globalThis.ClaudeExtBardSchema = full;
+		}
+		const result = net.decodeBard('ModelId', edited);
+		if (result.default !== true || 'identifier' in result) fail(`stale oneof: retained data overrode the edit: ${JSON.stringify(result)}`);
+	}
 	throws('unknown field', () => net.encodeBard('Message', { idd: 'x' }));
 	throws('two oneof members', () => net.encodeBard('ModelId', { default: true, identifier: 'x' }));
 	throws('unknown enum name', () => net.encodeBard('Message', { role: 'ROLE_NOPE' }));
@@ -432,10 +451,11 @@ console.log(`round trip: ${captured.length} captured messages`);
 			if (seen.length === 1) return [Uint8Array.from(Buffer.from('1a')), Uint8Array.from(Buffer.from('1b'))];
 			if (seen.length === 2) return Uint8Array.from(Buffer.from('two'));
 			if (seen.length === 3) return [];
+			if (f.endStream) return [Uint8Array.from(Buffer.from('before the end')), f.payload]; // split the end frame
 			return undefined;
 		});
 		const out = net.splitConnectFrames(await collect(stream)).map(f => [f.flags, Buffer.from(f.payload).toString()]);
-		const expected = [[0, '1a'], [0, '1b'], [0, 'two'], [0, 'fourth'], [2, '{"metadata":{"x":["1"]}}']];
+		const expected = [[0, '1a'], [0, '1b'], [0, 'two'], [0, 'fourth'], [0, 'before the end'], [2, '{"metadata":{"x":["1"]}}']];
 		if (!util.isDeepStrictEqual(out, expected)) fail(`rewriteConnectStream replace/split/drop: got ${JSON.stringify(out)}`);
 		if (seen[1] !== 'second, gzipped' || seen[4]?.metadata?.x?.[0] !== '1') fail(`rewriteConnectStream: onFrame saw ${JSON.stringify(seen)}`);
 	}
