@@ -322,6 +322,23 @@ Sonnet 5.5 dump's text, spot-checked; tool schemas from the dumps; new tokenizer
 | Inline visualizations | `request_evaluation_checklist`, `when_to_use_visualizer_for_inline_visuals`, `visualizer_examples`, 2.8K | `mcp__visualize__read_me` / `show_widget`, 1.5K | ≈ 4.2K | `enabled_mcp_tools["6f616b42-0ed8-571e-823f-ee4aca6b7ce9:show_widget"]` (the `visualize` MCP server; absent until the switch is touched) |
 | Preferences | `preferences_info` (+ examples), 2.0K | | ≈ 2.0K + the text | `/account_profile` `conversation_preferences` |
 
+**Settings that don't change it** (2026-10-08, each switched in Settings, then a fresh-chat survey
+of sections and loaded tools, then restored):
+- Artifacts, AI-powered artifacts, cloud code execution: off makes **no difference** (same
+  sections, same 71 loaded tools, `Artifact`/`Bash` etc. still loaded). The Artifacts switch is only
+  toggleable once code execution is off.
+- Web search: the merged UI has no switch for it; always in the prompt.
+- Gmail / Google Calendar / Google Drive connectors: their 50 tools are all **deferred** (names
+  only in the first-turn reminder, ~0.5K); no new sections, no loaded schemas.
+- **Research** (per chat, composer checkbox; conversation `settings.compass_mode: "advanced"`):
+  adds `research_instructions` (6,628) and drops `search_instructions` + `using_image_search_tool`
+  (8,681), ~2K lighter overall, plus a short reminder.
+- **Memory per chat** (composer checkbox; conversation `settings.chat_memory_mode`
+  `"enabled"`/`"disabled"`): disabled drops the memory sections and tools *and* chat search
+  (`past_chats_tools` + its tools); inline visuals stay.
+- Settings also has a "Tool access mode" (connector tools "already loaded" vs not); untested, and
+  with it on "Tools already loaded" the Google connector tools still came up deferred.
+
 - `/api/account` does **not** reflect the memory switches (`enabled_melange` stays `null`,
   `enabled_saffron_search` `false` with both on); the bootstrap's `account.settings` and
   `memory_mode` do. The visualize entry shows in both.
