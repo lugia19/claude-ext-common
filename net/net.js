@@ -724,7 +724,10 @@
 	// number, 64-bit integers as numbers or bigints, bytes as Uint8Array.
 	// Strict, so a typo fails loudly: a property the type doesn't have throws, so does setting two
 	// members of one oneof. "$unknown" records are written first, then the fields in field-number
-	// order (so an explicitly set field beats retained data in the same oneof); implicit-presence zero values
+	// order: an explicitly set field beats retained data in the same oneof (a member the server added
+	// that our schema lacks). The flip side: bytes carrying two members of one oneof, a known one
+	// before an unknown one (only possible by concatenating messages; a serializer writes at most one),
+	// resolve to the known member after a round trip, not the later one. Implicit-presence zero values
 	// are left out; explicit-presence fields and message fields are written whenever present (so
 	// parent_message_id: '' and {} are kept). null leaves a field unset (except google.protobuf.Value).
 	// Returns a Uint8Array. Appending encodeBard(type, partial) to a message's bytes merges into it
