@@ -14,7 +14,7 @@
 (function () {
 	'use strict';
 
-	const VERSION = 4; // 1: the unversioned first release, which filled members with ??=; 3: bard decoding; 4: bard encoding, frame rewriting
+	const VERSION = 5; // 1: the unversioned first release, which filled members with ??=; 3: bard decoding; 4: bard encoding, frame rewriting; 5: bardRpcRequest
 
 	const existing = globalThis.ClaudeExtNet;
 	if (existing && (existing.VERSION ?? 1) >= VERSION) return;
@@ -1259,6 +1259,27 @@
 	// A copy of response carrying `bytes` as its body (a unary protobuf response).
 	net.protoResponse = function (response, bytes) {
 		return new Response(bytes, { status: response.status, statusText: response.statusText, headers: net.sanitizedHeaders(response) });
+	};
+
+	// ======== bard API requests ========
+
+	// [url, init] for a request of our own to the bard ConversationService (claude.ai's merged
+	// experience), headers as the page sends them: fetch(...net.bardRpcRequest(...)). body is a string
+	// for Connect's JSON codec (needs no schema: JSON.stringify of camelCase fields), or bytes from
+	// encodeBard for protobuf. The RPCs check Origin, so send it with claude.ai's: from the page, or with
+	// content.fetch from a Firefox content script (its own fetch sends the extension's).
+	net.bardRpcRequest = function (method, orgId, body) {
+		return [`${globalThis.location?.origin ?? 'https://claude.ai'}/claudeai-rpc/anthropic.bard.api.v1alpha.ConversationService/${method}`, {
+			method: 'POST',
+			credentials: 'include',
+			headers: {
+				'content-type': typeof body === 'string' ? 'application/json' : 'application/proto',
+				'connect-protocol-version': '1',
+				'x-organization-uuid': orgId,
+				'anthropic-client-platform': 'web_claude_ai',
+			},
+			body,
+		}];
 	};
 
 	// ======== misc ========
