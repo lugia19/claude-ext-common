@@ -174,8 +174,10 @@ async function publishChrome(zipPath) {
 function amoAuth() {
 	const now = Math.floor(Date.now() / 1000);
 	const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+	// iat backdated: AMO rejects a token issued in its future, and a local clock a few seconds fast
+	// is enough for that ("JWT iat (issued at time) is invalid"). It allows exp up to iat + 5 minutes.
 	const claims = base64url(JSON.stringify({
-		iss: credentials.amo.apiKey, jti: crypto.randomUUID(), iat: now, exp: now + 60,
+		iss: credentials.amo.apiKey, jti: crypto.randomUUID(), iat: now - 30, exp: now + 60,
 	}));
 	const signature = crypto.createHmac('sha256', credentials.amo.apiSecret).update(`${header}.${claims}`).digest('base64url');
 	return { Authorization: `JWT ${header}.${claims}.${signature}` };
