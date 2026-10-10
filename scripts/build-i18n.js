@@ -3,8 +3,10 @@
 // file per table set instead of one per language. The per-language files stay the sources: edit those,
 // then rebuild. check-i18n.js warns about a stale all.js, and mirror-debug.js --watch rebuilds on save.
 //
-//   node common/scripts/build-i18n.js [<dir>]...
+//   node common/scripts/build-i18n.js [--check] [<dir>]...
 //
+// --check writes nothing and exits 1 if any all.js is missing or stale: build.bat runs it, so a release
+// never ships a bundle that doesn't match its tables (rebuilding there would ship an uncommitted one).
 // Paths are relative to the repo containing the submodule. Default: those of common/i18n, content/i18n
 // (Toolbox) and i18n (Usage Tracker) that exist.
 // Order inside all.js: en first, then the other languages alphabetically (each table only adds its
@@ -45,8 +47,18 @@ function build(dir) {
 module.exports = { bundle, build, isStale, isTable, defaultDirs, BUNDLE };
 
 if (require.main === module) {
-	const args = process.argv.slice(2).map(d => path.resolve(root, d));
-	for (const dir of args.length ? args : defaultDirs()) {
-		console.log(`${path.relative(root, bundlePath(dir))}: ${build(dir) ? 'written' : 'up to date'}`);
+	const check = process.argv.includes('--check');
+	const args = process.argv.slice(2).filter(a => a !== '--check').map(d => path.resolve(root, d));
+	const dirs = args.length ? args : defaultDirs();
+	if (check) {
+		const stale = dirs.filter(isStale).map(dir => path.relative(root, bundlePath(dir)));
+		if (stale.length) {
+			console.error(`Stale i18n bundle(s): ${stale.join(', ')}. Run node common/scripts/build-i18n.js and commit the result.`);
+			process.exit(1);
+		}
+	} else {
+		for (const dir of dirs) {
+			console.log(`${path.relative(root, bundlePath(dir))}: ${build(dir) ? 'written' : 'up to date'}`);
+		}
 	}
 }

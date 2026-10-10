@@ -143,10 +143,11 @@ All run from the extension repo's root:
   undefined keys, placeholder mismatches, and extension tables defining `shared.*` keys. `--src`
   takes directories or files. Defaults to `--tables content/i18n --src content`. Also flags an
   `all.js` that no longer matches its tables.
-- `node common/scripts/build-i18n.js [<dir>]...`: bundles a folder's `<lang>.js` tables into a
+- `node common/scripts/build-i18n.js [--check] [<dir>]...`: bundles a folder's `<lang>.js` tables into a
   generated `all.js` (en first), so a manifest lists one file per table set. Run it after editing a
   table and commit the result; `mirror-debug.js` rebuilds every existing `all.js` before each sync.
-  Defaults to whichever of `common/i18n`, `content/i18n` and `i18n` exist.
+  Defaults to whichever of `common/i18n`, `content/i18n` and `i18n` exist. `--check` writes nothing
+  and fails on a missing or stale bundle: each extension's `build.bat` runs it after `check-common.js`.
 - `node common/scripts/check-common.js`: run first by each extension's `build.bat`, from the extension
   root, after checking the submodule out if it never was (the script lives in it). Stops the build
   unless `common/` is clean (untracked and ignored files count, except ignored files under
