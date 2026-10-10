@@ -1148,6 +1148,9 @@ function createClaudeTooltip(element, tooltipText, deleteOnClick) {
 	// Create tooltip wrapper
 	const tooltipWrapper = document.createElement('div');
 	tooltipWrapper.className = CLAUDE_CLASSES.TOOLTIP_WRAPPER;
+	// Above ClaudeModal (its backdrop is z-50): claude.ai's z-tooltip is also 50, and the modal, added later,
+	// would win the tie and hide every tooltip inside it.
+	tooltipWrapper.style.zIndex = '60';
 	tooltipWrapper.style.display = 'none';
 	tooltipWrapper.setAttribute('data-cds', 'Tooltip');
 
