@@ -22,7 +22,8 @@ There is no bundler. Every file is a plain script listed directly in the extensi
 | `log/viewer.html` | extension page | The debug-log viewer (filters, search, copy, clear). Open it with `openDebugLogs()` or in a tab; `?lang=` sets its language. List it and `log/viewer.js` in `web_accessible_resources` |
 | `i18n/i18n-core.js` | any | `localize`, `translate`, `currentLocale`, `normalizeLocale`, `fmtNum`, the shared language override and account locale cache |
 | `i18n/account-locale-watcher.js` | MAIN | Records the account language from `PUT /api/account_profile`. IIFE, safe for every extension to load |
-| `i18n/<lang>.js` | any | Tables for the `shared.*` keys used by the files here |
+| `i18n/<lang>.js` | - | Tables for the `shared.*` keys used by the files here: the sources of `i18n/all.js`, not loaded themselves |
+| `i18n/all.js` | any | Every `i18n/<lang>.js` in one file. **Generated** by `scripts/build-i18n.js`, never edited by hand |
 | `claude/page.js` | ISOLATED (+ MAIN, one extension) | `getActiveOrgId`, `getConversationId`, `getIncognitoConversationId`, `isIncognito`, `getProjectId`, and page predicates (`isHomePage`, `isChatPage`, `isProjectPage`, `isCodePage`, `isCoworkPage`). URL, cookie and sessionStorage only, never the DOM |
 | `net/net.js` | any (MAIN-safe) | `globalThis.ClaudeExtNet`: fetch arguments (`getFetchUrl`, `getFetchMethod`), API URLs (`getApiIds`, `isCompletionUrl`), rebuilt responses (`sanitizedHeaders`, `jsonResponse`), request bodies (`readJsonRequestBody`, `withJsonRequestBody`, `isGzipRequest`, `isGzipBytes`, `gunzipBytes`), SSE (`createSseSplitter`, `readSseEvents`), Connect-RPC frames (`splitConnectFrames`, `readConnectFrames`, `encodeConnectFrame`, and `rewriteConnectStream` / `rewriteConnectResponse` to patch a stream frame by frame and `inject` frames of our own), protobuf bodies (`readProtoRequestBody`, `withProtoRequestBody`, `protoResponse`), our own bard RPC requests (`bardRpcRequest(method, orgId, body)` → `[url, init]`, JSON or protobuf by body type), the bard API codec (`decodeBard`, `encodeBard`, need `net/bard-schema.js`; `decodeBard(type, bytes, { keepUnknown: true })` keeps fields the schema doesn't know in `$unknown`, so decode → edit → `encodeBard` is lossless) and `isKillSwitchOn`. Versioned, newest wins: see Rules |
 | `ext/bridge-isolated.js`, `ext/bridge-main.js` | ISOLATED / MAIN (MAIN-safe) | `globalThis.ClaudeExtBridge`, one file per world with the same names: `sendBackgroundMessage(app, message)` (ISOLATED: `runtime.sendMessage` with retries; MAIN: through the app's ISOLATED world), `call(app, type, data)` (MAIN asks an ISOLATED handler) and `serve(app, { handlers, background })` (ISOLATED: answers MAIN, forwarding only allow-listed background message types). Load each in its own world (Chrome injects a given file once per page and `run_at`, across worlds, so one file at `document_start` in both would skip one of them), and load `serve()` at `document_start` if MAIN sends during page load. The MAIN half is versioned, newest wins: see Rules |
@@ -33,7 +34,7 @@ There is no bundler. Every file is a plain script listed directly in the extensi
 | `scripts/` | - | Dev tooling, see below. Exclude it from builds (`--ignore-files "common/scripts/**"`). |
 | `eslint.base.cjs` | - | The ESLint config shared by all three repos, see Linting. Exclude it, `eslint.config.cjs` and `package*.json` from builds. |
 
-Load order: `log/logger.js` (then the extension's `configureLogger` call), the `i18n/<lang>.js` tables, then the extension's own tables, then `i18n/i18n-core.js`,
+Load order: `log/logger.js` (then the extension's `configureLogger` call), `i18n/all.js`, then the extension's own tables (its own generated `all.js`), then `i18n/i18n-core.js`,
 then `claude/page.js`, then `ui/components.js`, then `ui/cards.js`.
 
 ## Rules
@@ -140,7 +141,13 @@ All run from the extension repo's root:
   at once. Real copies: Chrome refuses to serve symlinked files.
 - `node common/scripts/check-i18n.js [--tables <dir>]... [--src <dir>]...`: missing, extra and
   undefined keys, placeholder mismatches, and extension tables defining `shared.*` keys. `--src`
-  takes directories or files. Defaults to `--tables content/i18n --src content`.
+  takes directories or files. Defaults to `--tables content/i18n --src content`. Also flags an
+  `all.js` that no longer matches its tables.
+- `node common/scripts/build-i18n.js [--check] [<dir>]...`: bundles a folder's `<lang>.js` tables into a
+  generated `all.js` (en first), so a manifest lists one file per table set. Run it after editing a
+  table and commit the result; `mirror-debug.js` rebuilds every existing `all.js` before each sync.
+  Defaults to whichever of `common/i18n`, `content/i18n` and `i18n` exist. `--check` writes nothing
+  and fails on a missing or stale bundle: each extension's `build.bat` runs it after `check-common.js`.
 - `node common/scripts/check-common.js`: run first by each extension's `build.bat`, from the extension
   root, after checking the submodule out if it never was (the script lives in it). Stops the build
   unless `common/` is clean (untracked and ignored files count, except ignored files under
