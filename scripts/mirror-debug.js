@@ -82,9 +82,16 @@ function syncDir(srcDir, dstDir, isRoot) {
 	}
 }
 
+// The generated i18n bundles (build-i18n.js), rebuilt before every sync so an edited table is never
+// mirrored with a stale all.js. Only dirs that already have one: the extension opted in.
+const { build: buildI18n, defaultDirs: i18nDirs, BUNDLE: I18N_BUNDLE } = require('./build-i18n.js');
+
 function sync() {
 	copied = 0;
 	removed = 0;
+	for (const dir of i18nDirs()) {
+		if (fs.existsSync(path.join(dir, I18N_BUNDLE)) && buildI18n(dir)) console.log(`[${stamp()}] rebuilt ${path.relative(rootDir, path.join(dir, I18N_BUNDLE))}`);
+	}
 
 	for (const target of targets) {
 		const manifest = path.join(rootDir, `manifest_${target}.json`);

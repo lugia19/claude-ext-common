@@ -10,6 +10,7 @@
 // - extension tables defining shared.* keys, which belong to common
 // - localize('...') / translate(x, '...') keys used in the sources that no en table defines
 // - {placeholder} mismatches between en and a translation
+// - a generated all.js (build-i18n.js) that no longer matches its tables
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
@@ -88,6 +89,12 @@ for (const file of sources) {
 	for (const m of src.matchAll(/(?:localize\(|translate\([^,()]+,)\s*['"`]([\w.-]+)['"`]/g)) {
 		if (!(m[1] in known)) warn(`[en] undefined key ${m[1]} used in ${path.relative(root, file)}`);
 	}
+}
+
+// Generated bundles (build-i18n.js) must match their tables, or the extension loads stale strings.
+const { isStale, BUNDLE } = require('./build-i18n.js');
+for (const dir of [path.join(commonDir, 'i18n'), ...args.tables]) {
+	if (fs.existsSync(path.join(dir, BUNDLE)) && isStale(dir)) warn(`[bundle] ${path.relative(root, path.join(dir, BUNDLE))} is stale: run node common/scripts/build-i18n.js`);
 }
 
 console.log(problems ? `\n${problems} problem(s).` : 'i18n OK');
