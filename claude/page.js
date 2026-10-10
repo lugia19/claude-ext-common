@@ -52,9 +52,9 @@ function isProjectPage() {
 	return getProjectId() !== null;
 }
 
-// Claude Code: /code on the web, /claude-code-desktop/... in the desktop app.
+// Claude Code: /code... on the web, /epitaxy... in the desktop app (its /code redirects there).
 function isCodePage() {
-	return location.pathname.includes('claude-code-desktop') || location.pathname.includes('/code');
+	return /^\/(code|epitaxy)(\/|$)/.test(location.pathname);
 }
 
 // Any Cowork page: sessions (/cowork/cse_..., /cowork/local_...) but also e.g. /cowork/projects.
