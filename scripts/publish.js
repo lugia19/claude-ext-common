@@ -5,7 +5,7 @@
 //
 // Uses the zips attached to the draft GitHub release vX.Y.Z (exactly what was tested, not a rebuild):
 //   1. chrome:  uploads the Chrome zip to the Chrome Web Store and submits it for review
-//   2. firefox: uploads the Firefox zip to AMO as a new listed version, with the draft's notes
+//   2. firefox: uploads the Firefox zip to AMO as a new listed version (desktop and Android), with the draft's notes
 //   3. github:  publishes the draft release (the Electron zip lives there)
 // Asks you to type the version first. --only re-runs just some steps, e.g. after one failed.
 //
@@ -204,7 +204,9 @@ async function publishFirefox(zipPath) {
 	const created = await request(`${AMO}/api/v5/addons/addon/${encodeURIComponent(geckoId)}/versions/`, {
 		method: 'POST',
 		headers: { ...amoAuth(), 'Content-Type': 'application/json' },
-		body: JSON.stringify({ upload: upload.uuid, release_notes: { 'en-US': releaseNotes } }),
+		// Explicit, or AMO derives it from the manifest, which adds Android only with a gecko_android key.
+		// The list form takes the min versions from the manifest's strict_min_version.
+		body: JSON.stringify({ upload: upload.uuid, compatibility: ['firefox', 'android'], release_notes: { 'en-US': releaseNotes } }),
 	}, 'AMO version');
 	step(`Firefox: version ${created.version} submitted (${created.file?.status ?? 'awaiting review'}).`);
 }
