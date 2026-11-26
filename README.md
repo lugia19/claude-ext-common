@@ -88,8 +88,12 @@ All tables merge into `globalThis.CLAUDE_EXT_I18N`:
 Object.assign((globalThis.CLAUDE_EXT_I18N ??= {})['en'] ??= {}, { 'feature.key': 'Text with {name}' });
 ```
 
-`shared.*` keys belong to this repo; extensions must not define them. Every key goes into all 10
-tables (en, fr, de, hi, id, it, ja, ko, pt-BR, es), with `en` as the source of truth.
+`shared.*` keys belong to this repo; extensions must not define them. There is a table for every
+language claude.ai offers (`I18N_LOCALES`, 48), with `en` as the source of truth: add or change a key
+in `en.js` only, then run `scripts/translate-i18n.js` (see Scripts), which fills in the other
+languages. fr, de, hi, id, it, ja, ko, pt-BR and es were translated by hand, the rest by the script;
+a hand fix to any of them sticks until the English changes. Each entry stays on one line: the script
+writes the tables with `en.js` as the template.
 
 The language is resolved synchronously from claude.ai's localStorage, which every extension on the
 page shares, so they always agree:
@@ -148,6 +152,15 @@ All run from the extension repo's root:
   table and commit the result; `mirror-debug.js` rebuilds every existing `all.js` before each sync.
   Defaults to whichever of `common/i18n`, `content/i18n` and `i18n` exist. `--check` writes nothing
   and fails on a missing or stale bundle: each extension's `build.bat` runs it after `check-common.js`.
+- `node common/scripts/translate-i18n.js [--dry-run] [--lang <tags>] [--model <m>] [--concurrency <n>] [<dir>]...`:
+  machine-translates `en.js` into every `I18N_LOCALES` language through headless Claude Code
+  (`claude -p`, Opus, no tools or context), then rebuilds `all.js`. Only keys a table lacks, or whose
+  English changed since the last run, are translated: each dir's committed `.translations.json`
+  records the English its translations are of (and, under `stale`, keys whose retranslation
+  failed). So a hand-edited translation stays until its English changes. Outputs must keep the
+  English's `{placeholders}`, HTML tags and line breaks; a failing key is retried once, then left
+  out (English fallback). Same default dirs as `build-i18n.js`. Run it after changing `en.js`, in
+  each extension (common's tables are translated by whichever runs first).
 - `node common/scripts/check-common.js`: run first by each extension's `build.bat`, from the extension
   root, after checking the submodule out if it never was (the script lives in it). Stops the build
   unless `common/` is clean (untracked and ignored files count, except ignored files under

@@ -15,7 +15,16 @@
 // language themselves: have a content script store currentLocale() somewhere they can read, and
 // call translate(locale, key, vars) there instead of localize().
 
-const I18N_LOCALES = ['en', 'fr', 'de', 'hi', 'id', 'it', 'ja', 'ko', 'pt-BR', 'es'];
+// Every language claude.ai offers, as a table tag: 'en' is the base and fallback, and claude.ai's
+// regional variants share one table (es-419 and es-ES -> es, en-US -> en). The first ten were
+// translated by hand, the rest by common/scripts/translate-i18n.js, which keeps all of them current
+// as the English changes.
+const I18N_LOCALES = [
+	'en', 'fr', 'de', 'hi', 'id', 'it', 'ja', 'ko', 'pt-BR', 'es',
+	'am', 'ar', 'be', 'bho', 'bn', 'da', 'fi', 'fil', 'gu', 'ha', 'he', 'ig', 'kn', 'ml', 'mr', 'nb', 'nl',
+	'ny', 'om', 'pl', 'pt-PT', 'rn', 'ru', 'rw', 'so', 'sv', 'sw', 'ta', 'te', 'th', 'tr', 'uk', 'ur', 'vi',
+	'wo', 'yo', 'zh-Hans', 'zh-Hant',
+];
 
 // Deliberately untranslated: each language is shown in its own script.
 const LANGUAGE_NATIVE_NAMES = {
@@ -29,6 +38,52 @@ const LANGUAGE_NATIVE_NAMES = {
 	'ko': '한국어',
 	'pt-BR': 'Português (Brasil)',
 	'es': 'Español',
+	'am': 'አማርኛ',
+	'ar': 'العربية',
+	'be': 'Беларуская',
+	'bho': 'भोजपुरी',
+	'bn': 'বাংলা',
+	'da': 'Dansk',
+	'fi': 'Suomi',
+	'fil': 'Filipino',
+	'gu': 'ગુજરાતી',
+	'ha': 'Hausa',
+	'he': 'עברית',
+	'ig': 'Igbo',
+	'kn': 'ಕನ್ನಡ',
+	'ml': 'മലയാളം',
+	'mr': 'मराठी',
+	'nb': 'Norsk bokmål',
+	'nl': 'Nederlands',
+	'ny': 'Chichewa',
+	'om': 'Oromoo',
+	'pl': 'Polski',
+	'pt-PT': 'Português (Portugal)',
+	'rn': 'Ikirundi',
+	'ru': 'Русский',
+	'rw': 'Ikinyarwanda',
+	'so': 'Soomaali',
+	'sv': 'Svenska',
+	'sw': 'Kiswahili',
+	'ta': 'தமிழ்',
+	'te': 'తెలుగు',
+	'th': 'ไทย',
+	'tr': 'Türkçe',
+	'uk': 'Українська',
+	'ur': 'اردو',
+	'vi': 'Tiếng Việt',
+	'wo': 'Wolof',
+	'yo': 'Èdè Yorùbá',
+	'zh-Hans': '简体中文',
+	'zh-Hant': '繁體中文',
+};
+
+// Other tags for a table's language: browser (navigator.language) forms of Chinese and Norwegian,
+// and legacy codes. Tried after an exact match and a script subtag, before the bare base language.
+const LOCALE_ALIASES = {
+	'zh': 'zh-Hans', 'zh-cn': 'zh-Hans', 'zh-sg': 'zh-Hans', 'zh-my': 'zh-Hans',
+	'zh-tw': 'zh-Hant', 'zh-hk': 'zh-Hant', 'zh-mo': 'zh-Hant',
+	'no': 'nb', 'nn': 'nb', 'iw': 'he', 'tl': 'fil', 'pt': 'pt-BR',
 };
 
 const I18N_OVERRIDE_KEY = 'claude_ext_language';
@@ -39,8 +94,7 @@ const ACCOUNT_LOCALE_TTL = 24 * 60 * 60 * 1000;
 const ACCOUNT_LOCALE_CLAIM = 60 * 1000;
 
 // The locales claude.ai itself offers, in the form /api/account_profile reports them: its original
-// eleven, plus the bare tags it added in 2026-11 (zh-Hans, ru, ...). Most of these have no
-// I18N_LOCALES table, so the UI falls back to English there, but accountLocale() still reports them.
+// eleven, plus the bare tags it added in 2026-11 (zh-Hans, ru, ...).
 const ACCOUNT_LOCALES = [
 	'en-US', 'de-DE', 'fr-FR', 'ko-KR', 'ja-JP', 'es-419', 'es-ES', 'it-IT', 'hi-IN', 'pt-BR', 'id-ID',
 	'am', 'ar', 'be', 'bho', 'bn', 'da', 'fi', 'fil', 'gu', 'ha', 'he', 'ig', 'kn', 'ml', 'mr', 'nb', 'nl',
@@ -48,16 +102,17 @@ const ACCOUNT_LOCALES = [
 	'wo', 'yo', 'zh-Hans', 'zh-Hant',
 ];
 
-// Map any language tag (en-US, es-419, pt, ...) to one of I18N_LOCALES. Falls back to 'en', which is
-// also what every claude.ai language without a table (zh-Hans, ru, ...) gets.
+// Map any language tag (en-US, es-419, zh-TW, pt, ...) to one of I18N_LOCALES. Falls back to 'en'.
 function normalizeLocale(raw) {
 	if (!raw || typeof raw !== 'string') return 'en';
-	const lower = raw.toLowerCase().trim();
+	const lower = raw.toLowerCase().trim().replace(/_/g, '-');
 	const exact = I18N_LOCALES.find(l => l.toLowerCase() === lower);
 	if (exact) return exact;
-	const base = lower.split('-')[0];
-	if (base === 'pt') return 'pt-BR';
-	return I18N_LOCALES.find(l => l === base) || 'en';
+	// zh-Hant-TW -> zh-Hant: a table tag followed by more subtags.
+	const prefix = I18N_LOCALES.find(l => l.includes('-') && lower.startsWith(l.toLowerCase() + '-'));
+	if (prefix) return prefix;
+	const [base, region] = lower.split('-');
+	return LOCALE_ALIASES[`${base}-${region}`] || LOCALE_ALIASES[base] || I18N_LOCALES.find(l => l === base) || 'en';
 }
 
 // {locale, expiry}, or null. locale is whatever the account reported (or null while a first

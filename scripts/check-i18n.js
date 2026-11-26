@@ -6,6 +6,7 @@
 // Paths are relative to the repo containing the submodule. --src takes directories or single files
 // (node_modules, debug and common are skipped inside directories). Defaults: --tables content/i18n,
 // --src content. The common tables (common/i18n) are always checked as well.
+// - I18N_LOCALES languages with no table (translate-i18n.js makes them), and tables for other languages
 // - keys missing from / extra in each language vs en, for common and for the extension separately
 // - extension tables defining shared.* keys, which belong to common
 // - localize('...') / translate(x, '...') keys used in the sources that no en table defines
@@ -14,6 +15,7 @@
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const { isTable } = require('./build-i18n.js');
 
 const commonDir = path.join(__dirname, '..');
 const root = path.join(commonDir, '..');
@@ -33,7 +35,7 @@ function loadTables(dirs) {
 	sandbox.globalThis = sandbox;
 	vm.createContext(sandbox);
 	for (const dir of dirs) {
-		for (const file of fs.readdirSync(dir).filter(f => /^[a-z]{2}(-[A-Z]{2})?\.js$/.test(f))) {
+		for (const file of fs.readdirSync(dir).filter(isTable)) {
 			vm.runInContext(fs.readFileSync(path.join(dir, file), 'utf8'), sandbox, { filename: file });
 		}
 	}
@@ -47,8 +49,16 @@ const placeholders = s => [...s.matchAll(/\{(\w+)\}/g)].map(m => m[1]).sort().jo
 let problems = 0;
 const warn = msg => { problems++; console.log(msg); };
 
+const core = {};
+vm.createContext(core);
+vm.runInContext(fs.readFileSync(path.join(commonDir, 'i18n', 'i18n-core.js'), 'utf8'), core);
+
 function checkSet(label, tables) {
 	const en = tables.en || {};
+	const absent = core.I18N_LOCALES.filter(l => !(l in tables));
+	if (absent.length) warn(`[${label}] no table for ${absent.join(', ')}: run node common/scripts/translate-i18n.js`);
+	const unknown = Object.keys(tables).filter(l => !core.I18N_LOCALES.includes(l));
+	if (unknown.length) warn(`[${label}] tables for languages not in I18N_LOCALES: ${unknown.join(', ')}`);
 	for (const [lang, table] of Object.entries(tables)) {
 		if (lang === 'en') continue;
 		const missing = Object.keys(en).filter(k => !(k in table));

@@ -16,7 +16,8 @@ const path = require('path');
 
 const root = path.join(__dirname, '..', '..');
 const BUNDLE = 'all.js';
-const isTable = (file) => /^[a-z]{2}(-[A-Z]{2})?\.js$/.test(file);
+// <lang>.js for any I18N_LOCALES tag (de, bho, pt-BR, zh-Hans). all.js matches the pattern too.
+const isTable = (file) => file !== BUNDLE && /^[a-z]{2,3}(-[A-Za-z]{2,4})?\.js$/.test(file);
 const defaultDirs = () => ['common/i18n', 'content/i18n', 'i18n'].map(d => path.join(root, d)).filter(fs.existsSync);
 
 // The all.js content for dir, from its tables.
