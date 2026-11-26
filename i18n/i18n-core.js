@@ -38,10 +38,18 @@ const ACCOUNT_LOCALE_TTL = 24 * 60 * 60 * 1000;
 // How long a refresh in progress holds off other refreshes (other worlds, other extensions).
 const ACCOUNT_LOCALE_CLAIM = 60 * 1000;
 
-// The locales claude.ai itself offers, in the form /api/account_profile reports them.
-const ACCOUNT_LOCALES = ['en-US', 'de-DE', 'fr-FR', 'ko-KR', 'ja-JP', 'es-419', 'es-ES', 'it-IT', 'hi-IN', 'pt-BR', 'id-ID'];
+// The locales claude.ai itself offers, in the form /api/account_profile reports them: its original
+// eleven, plus the bare tags it added in 2026-11 (zh-Hans, ru, ...). Most of these have no
+// I18N_LOCALES table, so the UI falls back to English there, but accountLocale() still reports them.
+const ACCOUNT_LOCALES = [
+	'en-US', 'de-DE', 'fr-FR', 'ko-KR', 'ja-JP', 'es-419', 'es-ES', 'it-IT', 'hi-IN', 'pt-BR', 'id-ID',
+	'am', 'ar', 'be', 'bho', 'bn', 'da', 'fi', 'fil', 'gu', 'ha', 'he', 'ig', 'kn', 'ml', 'mr', 'nb', 'nl',
+	'ny', 'om', 'pl', 'pt-PT', 'rn', 'ru', 'rw', 'so', 'sv', 'sw', 'ta', 'te', 'th', 'tr', 'uk', 'ur', 'vi',
+	'wo', 'yo', 'zh-Hans', 'zh-Hant',
+];
 
-// Map any language tag (en-US, es-419, pt, ...) to one of I18N_LOCALES. Falls back to 'en'.
+// Map any language tag (en-US, es-419, pt, ...) to one of I18N_LOCALES. Falls back to 'en', which is
+// also what every claude.ai language without a table (zh-Hans, ru, ...) gets.
 function normalizeLocale(raw) {
 	if (!raw || typeof raw !== 'string') return 'en';
 	const lower = raw.toLowerCase().trim();
