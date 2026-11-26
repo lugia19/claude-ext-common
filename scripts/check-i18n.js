@@ -6,6 +6,7 @@
 // Paths are relative to the repo containing the submodule. --src takes directories or single files
 // (node_modules, debug and common are skipped inside directories). Defaults: --tables content/i18n,
 // --src content. The common tables (common/i18n) are always checked as well.
+// - I18N_LOCALES languages with no table (translate-i18n.js makes them)
 // - keys missing from / extra in each language vs en, for common and for the extension separately
 // - extension tables defining shared.* keys, which belong to common
 // - localize('...') / translate(x, '...') keys used in the sources that no en table defines
@@ -13,7 +14,7 @@
 // - a generated all.js (build-i18n.js) that no longer matches its tables
 const fs = require('fs');
 const path = require('path');
-const vm = require('vm');
+const { tableFiles, loadTables, placeholders: placeholderList, I18N_LOCALES, isStale, BUNDLE } = require('./build-i18n.js');
 
 const commonDir = path.join(__dirname, '..');
 const root = path.join(commonDir, '..');
@@ -27,28 +28,17 @@ for (let i = 2; i < process.argv.length; i++) {
 if (!args.tables.length) args.tables.push(path.join(root, 'content', 'i18n'));
 if (!args.src.length) args.src.push(path.join(root, 'content'));
 
-// Run the table files (<lang>.js) of the given dirs in a fresh sandbox and return the merged tables.
-function loadTables(dirs) {
-	const sandbox = {};
-	sandbox.globalThis = sandbox;
-	vm.createContext(sandbox);
-	for (const dir of dirs) {
-		for (const file of fs.readdirSync(dir).filter(f => /^[a-z]{2}(-[A-Z]{2})?\.js$/.test(f))) {
-			vm.runInContext(fs.readFileSync(path.join(dir, file), 'utf8'), sandbox, { filename: file });
-		}
-	}
-	return sandbox.CLAUDE_EXT_I18N || {};
-}
-
-const commonTables = loadTables([path.join(commonDir, 'i18n')]);
-const extTables = loadTables(args.tables);
-const placeholders = s => [...s.matchAll(/\{(\w+)\}/g)].map(m => m[1]).sort().join(',');
+const commonTables = loadTables(tableFiles(path.join(commonDir, 'i18n')));
+const extTables = loadTables(args.tables.flatMap(tableFiles));
+const placeholders = s => placeholderList(s).join(',');
 
 let problems = 0;
 const warn = msg => { problems++; console.log(msg); };
 
 function checkSet(label, tables) {
 	const en = tables.en || {};
+	const absent = I18N_LOCALES.filter(l => !(l in tables));
+	if (absent.length) warn(`[${label}] no table for ${absent.join(', ')}: run node common/scripts/translate-i18n.js`);
 	for (const [lang, table] of Object.entries(tables)) {
 		if (lang === 'en') continue;
 		const missing = Object.keys(en).filter(k => !(k in table));
@@ -92,7 +82,6 @@ for (const file of sources) {
 }
 
 // Generated bundles (build-i18n.js) must match their tables, or the extension loads stale strings.
-const { isStale, BUNDLE } = require('./build-i18n.js');
 for (const dir of [path.join(commonDir, 'i18n'), ...args.tables]) {
 	if (fs.existsSync(path.join(dir, BUNDLE)) && isStale(dir)) warn(`[bundle] ${path.relative(root, path.join(dir, BUNDLE))} is stale: run node common/scripts/build-i18n.js`);
 }
