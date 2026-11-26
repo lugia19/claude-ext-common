@@ -345,8 +345,10 @@ function updateManifests(sets, results) {
 			}
 			if (s.size) stale[lang] = keys.filter(k => s.has(k));
 		}
-		const next = { source: Object.fromEntries(keys.map(k => [k, template.en[k]])), stale };
-		fs.writeFileSync(set.manifestPath, JSON.stringify(next, null, '\t') + '\n');
+		const next = JSON.stringify({ source: Object.fromEntries(keys.map(k => [k, template.en[k]])), stale }, null, '\t') + '\n';
+		// Unchanged apart from line endings (a CRLF checkout) is unchanged.
+		const current = fs.existsSync(set.manifestPath) ? fs.readFileSync(set.manifestPath, 'utf8').replace(/\r\n/g, '\n') : null;
+		if (next !== current) fs.writeFileSync(set.manifestPath, next);
 	}
 }
 
