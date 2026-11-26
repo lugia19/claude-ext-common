@@ -26,6 +26,5 @@
 		"shared.logs.clear": "Clear",
 		"shared.logs.empty": "No log entries yet.",
 		"shared.logs.count": "{shown} of {total} entries"
-	},
-	"stale": {}
+	}
 }

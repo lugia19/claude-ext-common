@@ -156,10 +156,10 @@ All run from the extension repo's root:
   machine-translates `en.js` into every `I18N_LOCALES` language through headless Claude Code
   (`claude -p`, Opus, no tools or context), then rebuilds `all.js`. Only keys a table lacks, or whose
   English changed since the last run, are translated: each dir's committed `.translations.json`
-  records the English its translations are of (and, under `stale`, keys whose retranslation
-  failed). So a hand-edited translation stays until its English changes. Outputs must keep the
-  English's `{placeholders}`, HTML tags and line breaks; a failing key is retried once, then left
-  out (English fallback). Same default dirs as `build-i18n.js`. Run it after changing `en.js`, in
+  records the English its translations are of. So a hand-edited translation stays until its English
+  changes. Outputs must keep the English's `{placeholders}`, HTML tags and line breaks; a failing key
+  is retried once, then left out (English fallback, retried by the next run), and an outdated
+  translation is never kept. Same default dirs as `build-i18n.js`. Run it after changing `en.js`, in
   each extension (common's tables are translated by whichever runs first).
 - `node common/scripts/check-common.js`: run first by each extension's `build.bat`, from the extension
   root, after checking the submodule out if it never was (the script lives in it). Stops the build

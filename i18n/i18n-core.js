@@ -15,18 +15,11 @@
 // language themselves: have a content script store currentLocale() somewhere they can read, and
 // call translate(locale, key, vars) there instead of localize().
 
-// Every language claude.ai offers, as a table tag: 'en' is the base and fallback, and claude.ai's
-// regional variants share one table (es-419 and es-ES -> es, en-US -> en). The first ten were
-// translated by hand, the rest by common/scripts/translate-i18n.js, which keeps all of them current
-// as the English changes.
-const I18N_LOCALES = [
-	'en', 'fr', 'de', 'hi', 'id', 'it', 'ja', 'ko', 'pt-BR', 'es',
-	'am', 'ar', 'be', 'bho', 'bn', 'da', 'fi', 'fil', 'gu', 'ha', 'he', 'ig', 'kn', 'ml', 'mr', 'nb', 'nl',
-	'ny', 'om', 'pl', 'pt-PT', 'rn', 'ru', 'rw', 'so', 'sv', 'sw', 'ta', 'te', 'th', 'tr', 'uk', 'ur', 'vi',
-	'wo', 'yo', 'zh-Hans', 'zh-Hant',
-];
-
-// Deliberately untranslated: each language is shown in its own script.
+// Every language claude.ai offers, by table tag, with its name as shown in the language picker
+// (deliberately untranslated: each language in its own script). 'en' is the base and fallback, and
+// claude.ai's regional variants share one table (es-419 and es-ES -> es, en-US -> en). The first ten
+// were translated by hand, the rest (claude.ai's 2026-11 additions, kept last: ACCOUNT_LOCALES
+// relies on it) by common/scripts/translate-i18n.js, which keeps all of them current.
 const LANGUAGE_NATIVE_NAMES = {
 	'en': 'English',
 	'fr': 'Français',
@@ -77,6 +70,7 @@ const LANGUAGE_NATIVE_NAMES = {
 	'zh-Hans': '简体中文',
 	'zh-Hant': '繁體中文',
 };
+const I18N_LOCALES = Object.keys(LANGUAGE_NATIVE_NAMES);
 
 // Other tags for a table's language: browser (navigator.language) forms of Chinese and Norwegian,
 // and legacy codes. Tried after an exact match and a script subtag, before the bare base language.
@@ -94,12 +88,10 @@ const ACCOUNT_LOCALE_TTL = 24 * 60 * 60 * 1000;
 const ACCOUNT_LOCALE_CLAIM = 60 * 1000;
 
 // The locales claude.ai itself offers, in the form /api/account_profile reports them: its original
-// eleven, plus the bare tags it added in 2026-11 (zh-Hans, ru, ...).
+// eleven, plus the 2026-11 additions, which it reports as their table tags (zh-Hans, ru, ...).
 const ACCOUNT_LOCALES = [
 	'en-US', 'de-DE', 'fr-FR', 'ko-KR', 'ja-JP', 'es-419', 'es-ES', 'it-IT', 'hi-IN', 'pt-BR', 'id-ID',
-	'am', 'ar', 'be', 'bho', 'bn', 'da', 'fi', 'fil', 'gu', 'ha', 'he', 'ig', 'kn', 'ml', 'mr', 'nb', 'nl',
-	'ny', 'om', 'pl', 'pt-PT', 'rn', 'ru', 'rw', 'so', 'sv', 'sw', 'ta', 'te', 'th', 'tr', 'uk', 'ur', 'vi',
-	'wo', 'yo', 'zh-Hans', 'zh-Hant',
+	...I18N_LOCALES.slice(I18N_LOCALES.indexOf('am')),
 ];
 
 // Map any language tag (en-US, es-419, zh-TW, pt, ...) to one of I18N_LOCALES. Falls back to 'en'.
